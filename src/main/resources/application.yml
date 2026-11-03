@@ -7,7 +7,8 @@ spring:
       enabled: true
   datasource:
     # Runtime connection: restricted LOGIN role (member of sms_app), so row-level security applies.
-    url: jdbc:postgresql://${PGHOST:localhost}:${PGPORT:5432}/${PGDATABASE:sms}
+    # Railway: set DATABASE_URL (reference) on this service, or PGHOST/PGPORT/PGDATABASE (not localhost).
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${PGHOST:localhost}:${PGPORT:5432}/${PGDATABASE:sms}}
     username: ${DB_APP_USER:sms_app_login}
     password: ${DB_APP_PASSWORD:}
     hikari:

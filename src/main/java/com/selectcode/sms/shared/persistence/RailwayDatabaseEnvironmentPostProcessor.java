@@ -29,32 +29,54 @@ public class RailwayDatabaseEnvironmentPostProcessor implements EnvironmentPostP
 			props.put("SPRING_PROFILES_ACTIVE", "production".equalsIgnoreCase(railwayEnv) ? "prod" : "staging");
 		}
 
-		if (StringUtils.hasText(environment.getProperty("PGHOST"))) {
+		if (isUsableHost(environment.getProperty("PGHOST"))) {
 			mergeIfNeeded(environment, props);
 			return;
 		}
 
 		String dbUrl = firstNonBlank(environment.getProperty("DATABASE_PRIVATE_URL"),
-				environment.getProperty("DATABASE_URL"));
+				environment.getProperty("DATABASE_URL"), environment.getProperty("SPRING_DATASOURCE_URL"));
 		if (!StringUtils.hasText(dbUrl)) {
 			mergeIfNeeded(environment, props);
 			return;
 		}
 
 		PostgresUrl parsed = parsePostgresUrl(dbUrl);
+		applyPostgres(environment, props, parsed);
+		mergeIfNeeded(environment, props);
+	}
+
+	private static void applyPostgres(ConfigurableEnvironment environment, Map<String, Object> props,
+			PostgresUrl parsed) {
+		String jdbcUrl = toJdbcUrl(parsed);
 		props.put("PGHOST", parsed.host());
 		props.put("PGPORT", String.valueOf(parsed.port()));
 		props.put("PGDATABASE", parsed.database());
 		props.put("PGUSER", parsed.user());
 		props.put("PGPASSWORD", parsed.password());
+		props.put("spring.datasource.url", jdbcUrl);
+		props.put("spring.flyway.url", jdbcUrl);
 		if (!StringUtils.hasText(environment.getProperty("DB_MIGRATION_USER"))) {
 			props.put("DB_MIGRATION_USER", parsed.user());
 		}
 		if (!StringUtils.hasText(environment.getProperty("DB_MIGRATION_PASSWORD"))) {
 			props.put("DB_MIGRATION_PASSWORD", parsed.password());
 		}
+	}
 
-		mergeIfNeeded(environment, props);
+	static boolean isUsableHost(String pgHost) {
+		if (!StringUtils.hasText(pgHost)) {
+			return false;
+		}
+		if ("localhost".equalsIgnoreCase(pgHost) || "127.0.0.1".equals(pgHost)) {
+			return false;
+		}
+		// Unresolved Railway reference syntax ends up in the container literally
+		return !pgHost.contains("${{");
+	}
+
+	static String toJdbcUrl(PostgresUrl parsed) {
+		return "jdbc:postgresql://" + parsed.host() + ":" + parsed.port() + "/" + parsed.database();
 	}
 
 	private static void mergeIfNeeded(ConfigurableEnvironment environment, Map<String, Object> props) {
@@ -73,6 +95,9 @@ public class RailwayDatabaseEnvironmentPostProcessor implements EnvironmentPostP
 
 	static PostgresUrl parsePostgresUrl(String dbUrl) {
 		String normalized = dbUrl.trim();
+		if (normalized.startsWith("jdbc:postgresql://") || normalized.startsWith("jdbc:postgres://")) {
+			normalized = normalized.substring("jdbc:".length());
+		}
 		int schemeEnd = normalized.indexOf("://");
 		if (schemeEnd < 0) {
 			throw new IllegalArgumentException("Database URL must include a scheme (postgresql:// or postgres://)");

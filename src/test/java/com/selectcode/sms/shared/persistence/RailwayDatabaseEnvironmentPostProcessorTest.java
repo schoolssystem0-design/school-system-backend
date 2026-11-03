@@ -31,4 +31,11 @@ class RailwayDatabaseEnvironmentPostProcessorTest {
 		assertThatThrownBy(() -> RailwayDatabaseEnvironmentPostProcessor.parsePostgresUrl("postgresql://u:p@/db"))
 			.isInstanceOf(IllegalArgumentException.class);
 	}
+
+	@Test
+	void localhostHostIsNotUsable() {
+		assertThat(RailwayDatabaseEnvironmentPostProcessor.isUsableHost("localhost")).isFalse();
+		assertThat(RailwayDatabaseEnvironmentPostProcessor.isUsableHost("${{Postgres.PGHOST}}")).isFalse();
+		assertThat(RailwayDatabaseEnvironmentPostProcessor.isUsableHost("postgres.railway.internal")).isTrue();
+	}
 }
