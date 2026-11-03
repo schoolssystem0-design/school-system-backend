@@ -56,6 +56,8 @@ app:
     superadmin-email: ${BOOTSTRAP_SUPERADMIN_EMAIL:}
     superadmin-password: ${BOOTSTRAP_SUPERADMIN_PASSWORD:}
     superadmin-name: ${BOOTSTRAP_SUPERADMIN_NAME:System Owner}
+    # Staging only: when true, reapplies BOOTSTRAP_SUPERADMIN_PASSWORD for the configured email (recovery)
+    superadmin-reset-password: ${BOOTSTRAP_SUPERADMIN_RESET_PASSWORD:false}
   files:
     local-dir: ${APP_FILES_LOCAL_DIR:}
     r2-endpoint: ${R2_ENDPOINT:}
