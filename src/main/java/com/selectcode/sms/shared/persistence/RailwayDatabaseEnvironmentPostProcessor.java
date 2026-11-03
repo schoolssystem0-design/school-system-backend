@@ -86,11 +86,16 @@ public class RailwayDatabaseEnvironmentPostProcessor implements EnvironmentPostP
 		environment.getPropertySources().addFirst(new MapPropertySource(PROPERTY_SOURCE, props));
 	}
 
-	private static String firstNonBlank(String first, String second) {
-		if (StringUtils.hasText(first)) {
-			return first;
+	private static String firstNonBlank(String... candidates) {
+		if (candidates == null) {
+			return null;
 		}
-		return StringUtils.hasText(second) ? second : null;
+		for (String candidate : candidates) {
+			if (StringUtils.hasText(candidate)) {
+				return candidate;
+			}
+		}
+		return null;
 	}
 
 	static PostgresUrl parsePostgresUrl(String dbUrl) {
