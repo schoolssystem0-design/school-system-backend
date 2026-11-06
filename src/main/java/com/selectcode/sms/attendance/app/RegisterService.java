@@ -185,6 +185,7 @@ public class RegisterService {
 		String actor = CurrentActor.require().displayName();
 		long schoolId = TenantContext.requireSchoolId();
 		List<Long> newlyAbsent = new ArrayList<>();
+		List<Long> noLongerAbsent = new ArrayList<>();
 		int corrections = 0;
 		for (RegisterEntry row : current.rows()) {
 			Mark m = byStudent.get(row.studentId());
@@ -209,6 +210,9 @@ public class RegisterService {
 			if ("A".equals(status) && !(row.saved() && "A".equals(row.status()))) {
 				newlyAbsent.add(row.studentId());
 			}
+			if (!"A".equals(status) && row.saved() && "A".equals(row.status())) {
+				noLongerAbsent.add(row.studentId());
+			}
 			jdbc.update("""
 					insert into student_attendance (school_id, academic_year_id, att_date, section_id, student_id, status,
 					                                arrival_time, note, marked_by)
@@ -228,13 +232,17 @@ public class RegisterService {
 		if (settings.bool(SettingKey.SEND_ABSENCE_SMS) && date.equals(today)) {
 			queueAbsenceSms(newlyAbsent, date);
 		}
+		// A child marked absent by mistake: the alert is withdrawn if it has not gone out yet.
+		for (long studentId : noLongerAbsent) {
+			outbox.cancel(absenceKey(studentId, date), "Attendance corrected: no longer absent");
+		}
 		return register(sectionId, date);
 	}
 
 	private void queueAbsenceSms(List<Long> studentIds, LocalDate date) {
 		for (long studentId : studentIds) {
 			var s = jdbc.queryForMap("""
-					select st.name, f.father_phone, f.mother_phone, f.preferred_channel,
+					select st.name, f.father_phone, f.mother_phone, f.preferred_channel, f.message_language,
 					       (select c.phone from student_contact c where c.student_id = st.id and c.receives_attendance
 					          and c.phone is not null order by c.id limit 1) as contact_phone
 					from student st join family f on f.id = st.family_id where st.id = ?""", studentId);
@@ -246,10 +254,17 @@ public class RegisterService {
 			if (phone == null) {
 				continue;
 			}
+			// Pointless after the day is over: the phone drops it rather than alarming a parent the next morning.
+			java.time.Instant endOfDay = date.plusDays(1).atStartOfDay(java.time.ZoneId.of("Asia/Karachi")).toInstant();
 			outbox.queueSms(phone, templates.render(MessageTemplates.Code.ATTENDANCE_ABSENT, Map.of("name",
-					(String) s.get("name"), "date", com.selectcode.sms.shared.pdf.PdfKit.date(date))), "ATTENDANCE_ABSENT",
-					"student", studentId, "absent-" + studentId + "-" + date);
+					(String) s.get("name"), "date", com.selectcode.sms.shared.pdf.PdfKit.date(date)),
+					MessageTemplates.language((String) s.get("message_language"))), "ATTENDANCE_ABSENT", "student", studentId,
+					absenceKey(studentId, date), null, endOfDay);
 		}
+	}
+
+	private static String absenceKey(long studentId, LocalDate date) {
+		return "absent-" + studentId + "-" + date;
 	}
 
 	// ------------------------------------------------------------- missing

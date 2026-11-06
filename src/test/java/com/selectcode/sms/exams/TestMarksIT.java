@@ -148,6 +148,34 @@ class TestMarksIT extends IntegrationTest {
 	}
 
 	@Test
+	void marksAreSentToFamiliesOncePerStudentInTheirLanguage() throws Exception {
+		long test = test(admin, sec5a, maths, "Weekly", "25");
+		admin.post("/api/v1/test-marks/" + test + "/sms").andExpect(jsonPath("$.code").value("NO_MARKS"));
+		save(test, students.get(0), "18", students.get(1), "ABSENT");
+		var db = TestDatabase.superuser();
+		db.update("update family set message_language = 'UR' where id = (select family_id from student where id = ?)",
+				students.get(1));
+		db.update("update family set preferred_channel = 'NONE' where id = (select family_id from student where id = ?)",
+				students.get(2));
+		admin.post("/api/v1/test-marks/" + test + "/sms").andExpect(status().isOk())
+			.andExpect(jsonPath("$.queued").value(2))
+			.andExpect(jsonPath("$.noPhone").value(0))
+			.andExpect(jsonPath("$.noMarks").value(2));
+		admin.post("/api/v1/test-marks/" + test + "/sms").andExpect(jsonPath("$.queued").value(0))
+			.andExpect(jsonPath("$.alreadySent").value(2));
+		var bodies = db.queryForList("select body from message_outbox where school_id = ? and purpose = 'TEST_MARKS' order by id",
+				String.class, school.id());
+		org.assertj.core.api.Assertions.assertThat(bodies.get(0)).contains("Amna").contains("Maths").contains("18/25");
+		org.assertj.core.api.Assertions.assertThat(bodies.get(1)).contains("Bilal").contains("ghair hazir");
+		// Only someone allowed to send messages can send marks
+		ApiClient teacher = new ApiClient(mvc);
+		TestData.userWithPermissions(school, "marker", "marker-password-1", Permissions.EXAMS_VIEW,
+				Permissions.EXAMS_MARKS_ENTER);
+		teacher.login(school.code(), "marker", "marker-password-1").andExpect(status().isOk());
+		teacher.post("/api/v1/test-marks/" + test + "/sms").andExpect(status().isForbidden());
+	}
+
+	@Test
 	void changingASavedMarkNeedsAReasonAndIsLogged() throws Exception {
 		long t = test(admin, sec5a, maths, "Monthly test", "100");
 		save(t, students.get(0), "70");

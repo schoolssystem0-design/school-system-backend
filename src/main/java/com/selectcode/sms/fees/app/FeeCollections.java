@@ -86,8 +86,9 @@ public class FeeCollections {
 		if (familyIds.size() > 2000) {
 			throw ApiException.businessRule("TOO_MANY", "Send at most 2,000 reminders at a time");
 		}
-		String template = PakFormats.trimToNull(message) != null ? message.trim()
-				: templates.body(MessageTemplates.Code.FEE_REMINDER);
+		// A message written for this run is used as written; otherwise each family gets the wording in its language.
+		String custom = PakFormats.trimToNull(message) != null ? message.trim() : null;
+		String template = custom != null ? custom : templates.body(MessageTemplates.Code.FEE_REMINDER);
 		if (template.length() > 500) {
 			throw ApiException.businessRule("MESSAGE_TOO_LONG", "Keep the message under 500 characters");
 		}
@@ -97,7 +98,8 @@ public class FeeCollections {
 		int nothing = 0;
 		for (long familyId : familyIds.stream().distinct().toList()) {
 			List<Map<String, Object>> rows = jdbc.queryForList(
-					"select father_name, father_phone, mother_phone, preferred_channel from family where id = ?", familyId);
+					"select father_name, father_phone, mother_phone, preferred_channel, message_language from family where id = ?",
+					familyId);
 			if (rows.isEmpty()) {
 				continue;
 			}
@@ -112,7 +114,9 @@ public class FeeCollections {
 				noPhone++;
 				continue;
 			}
-			String body = templates.finish(template, Map.of("name",
+			String wording = custom != null ? custom
+					: templates.body(MessageTemplates.Code.FEE_REMINDER, (String) f.get("message_language"));
+			String body = templates.finish(wording, Map.of("name",
 					f.get("father_name") == null ? "Parent" : (String) f.get("father_name"), "amount", Amounts.rupees(due)));
 			if (outbox.queueSms(phone, body, "FEE_REMINDER", "family", familyId, idempotencyKey.trim())) {
 				queued++;

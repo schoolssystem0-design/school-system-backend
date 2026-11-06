@@ -1,5 +1,9 @@
 package com.selectcode.sms.communication.api;
 
+import com.selectcode.sms.communication.app.SmsPhoneService;
+import com.selectcode.sms.communication.app.SmsPhoneService.Connect;
+import com.selectcode.sms.communication.app.SmsPhoneService.PhoneStatus;
+import com.selectcode.sms.communication.app.SmsPhoneService.SmsTestResult;
 import com.selectcode.sms.communication.app.CommunicationService;
 import com.selectcode.sms.communication.app.CommunicationService.Audience;
 import com.selectcode.sms.communication.app.CommunicationService.DeliveryLog;
@@ -8,6 +12,7 @@ import com.selectcode.sms.communication.app.CommunicationService.SendReport;
 import com.selectcode.sms.communication.app.CommunicationService.TemplateView;
 import com.selectcode.sms.communication.app.CommunicationService.WelcomeResult;
 import com.selectcode.sms.shared.security.Permissions;
+import com.selectcode.sms.shared.security.RequiresStepUp;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -39,6 +44,8 @@ class CommunicationController {
 
 	private static final String TEMPLATES = "hasAuthority('" + Permissions.MESSAGES_TEMPLATES_MANAGE + "')" + ALL;
 
+	private static final String PHONE_SETUP = "hasAuthority('" + Permissions.SETTINGS_EDIT + "')" + ALL;
+
 	record MessageRequest(@NotBlank String audience, Long classId, Long sectionId, List<Long> studentIds,
 			@NotBlank @Size(max = 500) String message) {
 
@@ -50,10 +57,56 @@ class CommunicationController {
 	record TemplateRequest(@NotBlank @Size(max = 500) String body) {
 	}
 
+	record PhoneRequest(@Size(max = 300) String baseUrl, @NotBlank @Size(max = 100) String username,
+			@Size(max = 200) String password, @Size(max = 200) String signingKey, Integer simNumber,
+			@Size(max = 254) String alertEmail, Boolean enabled) {
+	}
+
+	record SmsTestRequest(@NotBlank @Size(max = 30) String phone) {
+	}
+
 	private final CommunicationService messages;
 
-	CommunicationController(CommunicationService messages) {
+	private final SmsPhoneService phone;
+
+	CommunicationController(CommunicationService messages, SmsPhoneService phone) {
 		this.messages = messages;
+		this.phone = phone;
+	}
+
+	/** The school's SMS phone: connection, health and today's counts. Secrets are never returned. */
+	@PreAuthorize(VIEW)
+	@GetMapping("/sms-phone")
+	PhoneStatus phoneStatus() {
+		return phone.status();
+	}
+
+	@PreAuthorize(PHONE_SETUP)
+	@RequiresStepUp
+	@PutMapping("/sms-phone")
+	PhoneStatus connectPhone(@Valid @RequestBody PhoneRequest body) {
+		return phone.connect(new Connect(body.baseUrl(), body.username(), body.password(), body.signingKey(),
+				body.simNumber(), body.alertEmail(), body.enabled()));
+	}
+
+	@PreAuthorize(PHONE_SETUP)
+	@PostMapping("/sms-phone/webhooks")
+	PhoneStatus registerPhoneWebhooks() {
+		return phone.registerWebhooks();
+	}
+
+	@PreAuthorize(PHONE_SETUP)
+	@RequiresStepUp
+	@DeleteMapping("/sms-phone")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	void disconnectPhone() {
+		phone.disconnect();
+	}
+
+	@PreAuthorize(SEND)
+	@PostMapping("/sms-phone/test")
+	SmsTestResult testPhone(@Valid @RequestBody SmsTestRequest body) {
+		return phone.test(body.phone());
 	}
 
 	/** Who would receive it, how many SMS parts and the estimated cost. Nothing is sent. */
@@ -99,13 +152,14 @@ class CommunicationController {
 
 	@PreAuthorize(TEMPLATES)
 	@PutMapping("/templates/{code}")
-	TemplateView saveTemplate(@PathVariable String code, @Valid @RequestBody TemplateRequest body) {
-		return messages.saveTemplate(code, body.body());
+	TemplateView saveTemplate(@PathVariable String code, @RequestParam(defaultValue = "EN") String language,
+			@Valid @RequestBody TemplateRequest body) {
+		return messages.saveTemplate(code, body.body(), language);
 	}
 
 	@PreAuthorize(TEMPLATES)
 	@DeleteMapping("/templates/{code}")
-	TemplateView resetTemplate(@PathVariable String code) {
-		return messages.resetTemplate(code);
+	TemplateView resetTemplate(@PathVariable String code, @RequestParam(defaultValue = "EN") String language) {
+		return messages.resetTemplate(code, language);
 	}
 }

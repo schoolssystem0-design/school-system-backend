@@ -52,7 +52,7 @@ public class CommunicationService {
 	}
 
 	public record TemplateView(String code, String label, String body, String defaultBody, boolean customised,
-			List<String> placeholders, int parts) {
+			List<String> placeholders, int parts, String language) {
 	}
 
 	public record WelcomeResult(boolean queued, boolean alreadySent, boolean noPhone) {
@@ -229,6 +229,7 @@ public class CommunicationService {
 	public WelcomeResult welcome(long studentId) {
 		Map<String, Object> s = jdbc.queryForList("""
 				select st.name, st.admission_date, coalesce(f.father_phone, f.mother_phone) as phone, f.preferred_channel,
+				       f.message_language,
 				       (select c.name from enrolment e join school_class c on c.id = e.class_id where e.student_id = st.id
 				         order by e.effective_from desc limit 1) as class_name
 				from student st join family f on f.id = st.family_id where st.id = ?""", studentId).stream().findFirst()
@@ -240,7 +241,8 @@ public class CommunicationService {
 		LocalDate first = ((Date) s.get("admission_date")).toLocalDate();
 		boolean queued = outbox.queueSms(phone, templates.render(Code.WELCOME, Map.of("name", (String) s.get("name"), "class",
 				s.get("class_name") == null ? "our school" : (String) s.get("class_name"), "date",
-				com.selectcode.sms.shared.pdf.PdfKit.date(first))), "WELCOME", "student", studentId, "welcome-" + studentId);
+				com.selectcode.sms.shared.pdf.PdfKit.date(first)), MessageTemplates.language((String) s.get("message_language"))),
+				"WELCOME", "student", studentId, "welcome-" + studentId);
 		if (queued) {
 			audit.record("WELCOME_SENT", "student", studentId, null, Map.of("student", studentId));
 		}
@@ -252,16 +254,19 @@ public class CommunicationService {
 	@Transactional(readOnly = true)
 	public List<TemplateView> templates() {
 		List<TemplateView> rows = new ArrayList<>();
-		for (Code c : Code.values()) {
-			rows.add(view(c));
+		for (String language : MessageTemplates.LANGUAGES) {
+			for (Code c : Code.values()) {
+				rows.add(view(c, language));
+			}
 		}
 		return rows;
 	}
 
-	private TemplateView view(Code c) {
-		String body = templates.body(c);
-		return new TemplateView(c.name(), c.label(), body, c.defaultBody(), !body.equals(c.defaultBody()), c.placeholders(),
-				SmsSegments.count(body).segments());
+	private TemplateView view(Code c, String language) {
+		String body = templates.body(c, language);
+		String standard = c.defaultBody(language);
+		return new TemplateView(c.name(), c.label(), body, standard, !body.equals(standard), c.placeholders(),
+				SmsSegments.count(body).segments(), language);
 	}
 
 	private static Code code(String value) {
@@ -274,8 +279,9 @@ public class CommunicationService {
 	}
 
 	@Transactional
-	public TemplateView saveTemplate(String codeName, String body) {
+	public TemplateView saveTemplate(String codeName, String body, String languageCode) {
 		Code c = code(codeName);
+		String language = MessageTemplates.language(languageCode);
 		String text = checkedMessage(body);
 		var matcher = PLACEHOLDER.matcher(text);
 		while (matcher.find()) {
@@ -284,23 +290,24 @@ public class CommunicationService {
 						+ String.join(", ", c.placeholders().stream().map(p -> "{" + p + "}").toList()));
 			}
 		}
-		TemplateView before = view(c);
+		TemplateView before = view(c, language);
 		jdbc.update("""
-				insert into message_template (school_id, code, body, updated_by) values (?, ?, ?, ?)
-				on conflict (school_id, code) do update set body = excluded.body, updated_by = excluded.updated_by,
-				    updated_at = now()""", TenantContext.requireSchoolId(), c.name(), text,
+				insert into message_template (school_id, code, language, body, updated_by) values (?, ?, ?, ?, ?)
+				on conflict (school_id, code, language) do update set body = excluded.body, updated_by = excluded.updated_by,
+				    updated_at = now()""", TenantContext.requireSchoolId(), c.name(), language, text,
 				CurrentActor.require().displayName());
 		audit.record("TEMPLATE_SAVED", "message_template", null, Map.of("body", before.body()),
-				Map.of("code", c.name(), "body", text));
-		return view(c);
+				Map.of("code", c.name(), "language", language, "body", text));
+		return view(c, language);
 	}
 
 	@Transactional
-	public TemplateView resetTemplate(String codeName) {
+	public TemplateView resetTemplate(String codeName, String languageCode) {
 		Code c = code(codeName);
-		jdbc.update("delete from message_template where code = ?", c.name());
-		audit.record("TEMPLATE_RESET", "message_template", null, null, Map.of("code", c.name()));
-		return view(c);
+		String language = MessageTemplates.language(languageCode);
+		jdbc.update("delete from message_template where code = ? and language = ?", c.name(), language);
+		audit.record("TEMPLATE_RESET", "message_template", null, null, Map.of("code", c.name(), "language", language));
+		return view(c, language);
 	}
 
 	// --------------------------------------------------------------- delivery

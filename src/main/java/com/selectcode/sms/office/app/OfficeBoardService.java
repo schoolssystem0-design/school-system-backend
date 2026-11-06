@@ -237,7 +237,8 @@ public class OfficeBoardService {
 		Map<String, Object> person;
 		if ("STUDENT".equals(personType)) {
 			person = jdbc.queryForList("""
-					select s.name, coalesce(f.father_phone, f.mother_phone) as phone, f.preferred_channel, s.dob
+					select s.name, coalesce(f.father_phone, f.mother_phone) as phone, f.preferred_channel, s.dob,
+					       f.message_language
 					from student s join family f on f.id = s.family_id where s.id = ?""", id).stream().findFirst()
 				.orElseThrow(() -> ApiException.notFound("Student"));
 		}
@@ -255,7 +256,43 @@ public class OfficeBoardService {
 		}
 		int year = MoneyInput.today(clock).getYear();
 		boolean queued = outbox.queueSms(phone, templates.render(MessageTemplates.Code.BIRTHDAY, Map.of("name",
-				(String) person.get("name"))), "BIRTHDAY", personType.toLowerCase(), id, wishKey(personType, id, year));
+				(String) person.get("name")), MessageTemplates.language((String) person.get("message_language"))),
+				"BIRTHDAY", personType.toLowerCase(), id, wishKey(personType, id, year));
 		return new WishResult(queued, !queued, false);
+	}
+
+	/**
+	 * Queues today's birthday wishes for the current school's active students, to go out at {@code sendAt} (the
+	 * evening). A student already wished by hand this year is skipped (same key). Feb 29 birthdays are wished on Feb 28
+	 * in other years.
+	 *
+	 * @return wishes queued
+	 */
+	@Transactional
+	public int queueTodaysBirthdays(LocalDate today, java.time.Instant sendAt) {
+		boolean feb28NonLeap = today.getMonthValue() == 2 && today.getDayOfMonth() == 28 && !today.isLeapYear();
+		List<Map<String, Object>> rows = jdbc.queryForList("""
+				select s.id, s.name, coalesce(f.father_phone, f.mother_phone) as phone, f.preferred_channel,
+				       f.message_language
+				from student s join family f on f.id = s.family_id
+				where s.status = 'ACTIVE' and s.dob is not null
+				  and ((extract(month from s.dob) = ? and extract(day from s.dob) = ?)
+				       or (? and extract(month from s.dob) = 2 and extract(day from s.dob) = 29))""",
+				today.getMonthValue(), today.getDayOfMonth(), feb28NonLeap);
+		java.time.Instant endOfDay = today.plusDays(1).atStartOfDay(java.time.ZoneId.of("Asia/Karachi")).toInstant();
+		int queued = 0;
+		for (Map<String, Object> p : rows) {
+			String phone = (String) p.get("phone");
+			if (phone == null || "NONE".equals(p.get("preferred_channel"))) {
+				continue;
+			}
+			long id = ((Number) p.get("id")).longValue();
+			if (outbox.queueSms(phone, templates.render(MessageTemplates.Code.BIRTHDAY, Map.of("name", (String) p.get("name")),
+					MessageTemplates.language((String) p.get("message_language"))), "BIRTHDAY", "student", id,
+					wishKey("STUDENT", id, today.getYear()), sendAt, endOfDay)) {
+				queued++;
+			}
+		}
+		return queued;
 	}
 }

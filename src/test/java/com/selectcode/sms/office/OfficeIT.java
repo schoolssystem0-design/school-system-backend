@@ -306,7 +306,7 @@ class OfficeIT extends IntegrationTest {
 		admin.get("/api/v1/dashboard").andExpect(jsonPath("$.register[?(@.studentId==%d)].welcomeSent".formatted(students.get(0)))
 			.value(org.hamcrest.Matchers.contains(true)));
 		admin.delete("/api/v1/communication/templates/WELCOME").andExpect(jsonPath("$.customised").value(false));
-		admin.get("/api/v1/communication/templates").andExpect(jsonPath("$.length()").value(5));
+		admin.get("/api/v1/communication/templates").andExpect(jsonPath("$.length()").value(12));
 	}
 
 	@Test

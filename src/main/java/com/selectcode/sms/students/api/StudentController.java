@@ -70,11 +70,12 @@ class StudentController {
 	record NewFamily(@Size(max = 200) String fatherName, @Size(max = 20) String fatherCnic,
 			@Size(max = 30) String fatherPhone, @Size(max = 100) String fatherProfession,
 			@Size(max = 200) String motherName, @Size(max = 20) String motherCnic, @Size(max = 30) String motherPhone,
-			@Size(max = 254) String email, @Size(max = 500) String address, String preferredChannel) {
+			@Size(max = 254) String email, @Size(max = 500) String address, String preferredChannel,
+			String messageLanguage) {
 
 		FamilyDetails toDetails() {
 			return new FamilyDetails(fatherName, fatherCnic, fatherPhone, fatherProfession, motherName, motherCnic,
-					motherPhone, email, address, null, null, preferredChannel, null);
+					motherPhone, email, address, null, null, preferredChannel, null, messageLanguage);
 		}
 	}
 

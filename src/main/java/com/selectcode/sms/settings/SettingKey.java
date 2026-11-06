@@ -115,6 +115,18 @@ public enum SettingKey {
 			"A complaint open for this many days shows as urgent on the dashboard", Type.INTEGER, 7, null),
 	ADMIN_ALERT_MOBILE(Group.MESSAGES, "Admin mobile for alerts", "Mobile number that receives system alerts",
 			Type.TEXT, "", null),
+	SMS_QUIET_START(Group.MESSAGES, "SMS quiet hours start",
+			"The school SMS phone sends nothing from this time (same start and end = no quiet hours)", Type.TIME, "21:00",
+			null),
+	SMS_QUIET_END(Group.MESSAGES, "SMS quiet hours end", "The school SMS phone starts sending again at this time",
+			Type.TIME, "07:00", null),
+	SMS_DAILY_LIMIT(Group.MESSAGES, "Daily SMS limit (school phone)",
+			"Most SMS the school phone sends in a day; the rest wait for the next day. Match it to the SIM bundle. 0 = no limit",
+			Type.INTEGER, 200, null),
+	SEND_BIRTHDAY_SMS(Group.MESSAGES, "Automatic birthday SMS",
+			"Send a birthday wish to each student's family on the birthday, in the evening", Type.BOOLEAN, false, null),
+	BIRTHDAY_SMS_TIME(Group.MESSAGES, "Birthday SMS time", "When automatic birthday wishes are sent", Type.TIME,
+			"18:00", null),
 
 	// --- Salary (FR 13.12, DECISIONS D-04)
 	LATE_DAYS_PER_ABSENCE(Group.SALARY, "Late days counted as one absence",

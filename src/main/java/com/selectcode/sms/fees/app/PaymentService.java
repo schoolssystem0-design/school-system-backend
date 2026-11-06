@@ -216,7 +216,8 @@ public class PaymentService {
 			return;
 		}
 		var family = jdbc.queryForMap(
-				"select father_phone, mother_phone, preferred_channel, family_no from family where id = ?", familyId);
+				"select father_phone, mother_phone, preferred_channel, family_no, message_language from family where id = ?",
+				familyId);
 		if ("NONE".equals(family.get("preferred_channel"))) {
 			return;
 		}
@@ -226,10 +227,14 @@ public class PaymentService {
 			return;
 		}
 		BigDecimal due = openLines.owed(familyId).subtract(openLines.creditTotal(familyId));
+		String language = MessageTemplates.language((String) family.get("message_language"));
+		boolean urdu = MessageTemplates.ROMAN_URDU.equals(language);
+		String balance = due.signum() > 0 ? (urdu ? "Baqaya " : "Balance due ") + Amounts.rupees(due) + "."
+				: due.signum() < 0 ? (urdu ? "Advance " : "Advance credit ") + Amounts.rupees(due.negate()) + "."
+						: urdu ? "Koi baqaya nahi." : "No dues.";
 		String body = templates.render(MessageTemplates.Code.FEE_RECEIPT, Map.of("amount", Amounts.rupees(amount), "date",
 				com.selectcode.sms.shared.pdf.PdfKit.date(date), "family", String.valueOf(family.get("family_no")), "receipt",
-				receiptNo, "balance", due.signum() > 0 ? "Balance due " + Amounts.rupees(due) + "."
-						: due.signum() < 0 ? "Advance credit " + Amounts.rupees(due.negate()) + "." : "No dues."));
+				receiptNo, "balance", balance), language);
 		outbox.queueSms(phone, body, "FEE_RECEIPT", "payment", paymentId, null);
 	}
 

@@ -40,11 +40,11 @@ class FamilyController {
 			@Size(max = 200) String motherName, @Size(max = 20) String motherCnic, @Size(max = 30) String motherPhone,
 			@Size(max = 254) String email, @Size(max = 500) String address, @Size(max = 200) String emergencyName,
 			@Size(max = 30) String emergencyPhone, String preferredChannel, @Size(max = 1000) String remarks,
-			Long version) {
+			Long version, String messageLanguage) {
 
 		FamilyDetails details() {
 			return new FamilyDetails(fatherName, fatherCnic, fatherPhone, fatherProfession, motherName, motherCnic,
-					motherPhone, email, address, emergencyName, emergencyPhone, preferredChannel, remarks);
+					motherPhone, email, address, emergencyName, emergencyPhone, preferredChannel, remarks, messageLanguage);
 		}
 	}
 

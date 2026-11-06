@@ -119,7 +119,7 @@ public class FamilyService {
 			incoming = new FamilyDetails(input.fatherName(), before.fatherCnic(), before.fatherPhone(),
 					input.fatherProfession(), input.motherName(), before.motherCnic(), before.motherPhone(),
 					before.email(), before.address(), input.emergencyName(), before.emergencyPhone(),
-					input.preferredChannel(), input.remarks());
+					input.preferredChannel(), input.remarks(), input.messageLanguage());
 		}
 		family.apply(validate(incoming), clock.instant());
 		families.flush();
@@ -204,7 +204,7 @@ public class FamilyService {
 		boolean contacts = CurrentActor.hasPermission(Permissions.STUDENTS_PRIVATE_VIEW);
 		FamilyDetails shown = contacts ? d
 				: new FamilyDetails(d.fatherName(), null, null, d.fatherProfession(), d.motherName(), null, null, null, null,
-						d.emergencyName(), null, d.preferredChannel(), d.remarks());
+						d.emergencyName(), null, d.preferredChannel(), d.remarks(), d.messageLanguage());
 		return new FamilyView(family.getId(), family.getFamilyNo(), shown, children == null ? 0 : children, !contacts,
 				family.getVersion());
 	}
@@ -217,11 +217,15 @@ public class FamilyService {
 		if (!Set.of("SMS", "WHATSAPP", "NONE").contains(channel)) {
 			throw ApiException.businessRule("CHANNEL_INVALID", "Unknown contact channel");
 		}
+		if (d.messageLanguage() != null && !Set.of("EN", "UR").contains(d.messageLanguage())) {
+			throw ApiException.businessRule("LANGUAGE_INVALID", "Choose English or Roman Urdu for messages");
+		}
 		return new FamilyDetails(PakFormats.trimToNull(d.fatherName()), PakFormats.cnic(d.fatherCnic(), "Father CNIC"),
 				PakFormats.phone(d.fatherPhone(), "Father phone"), PakFormats.trimToNull(d.fatherProfession()),
 				PakFormats.trimToNull(d.motherName()), PakFormats.cnic(d.motherCnic(), "Mother CNIC"),
 				PakFormats.phone(d.motherPhone(), "Mother phone"), PakFormats.trimToNull(d.email()),
 				PakFormats.trimToNull(d.address()), PakFormats.trimToNull(d.emergencyName()),
-				PakFormats.phone(d.emergencyPhone(), "Emergency phone"), channel, PakFormats.trimToNull(d.remarks()));
+				PakFormats.phone(d.emergencyPhone(), "Emergency phone"), channel, PakFormats.trimToNull(d.remarks()),
+				d.messageLanguage());
 	}
 }

@@ -38,6 +38,8 @@ public class LocalDevApplication {
 		System.setProperty("app.db.app-password", TestDatabase.APP_PASSWORD);
 		// One browser test run signs in more often than the real limit (30 in 5 minutes). This class never runs in production.
 		System.setProperty("app.security.signin-limit-per-network", "300");
+		// Local "SMS phone": a pretend SMS Gate server inside this API (any username; password "wrong" is refused).
+		System.setProperty("app.sms-gate.default-url", "http://localhost:8080/api/v1/dev/sms-gate/3rdparty/v1");
 
 		ConfigurableApplicationContext context = SpringApplication.from(SmsApplication::main)
 			.withAdditionalProfiles("local")
@@ -62,6 +64,7 @@ public class LocalDevApplication {
 				  School sign-in : school DEMO or DEMO2 / username admin / password %s
 				  Super admin    : %s / %s / authenticator secret %s
 				  Dev outbox     : http://localhost:8080/api/v1/dev/outbox (setup links, verification codes)
+				  Fake SMS phone : http://localhost:8080/api/v1/dev/sms-gate/messages (connect it in Messages, SMS phone)
 				""".formatted(DEMO_PASSWORD, OWNER_EMAIL, OWNER_PASSWORD, OWNER_TOTP_SECRET));
 	}
 

@@ -45,7 +45,9 @@ public class SecurityConfig {
 			// CSRF: HttpOnly cookie (sent automatically to the API) + raw token returned by GET /api/v1/auth/csrf,
 			// which the app keeps in memory and sends as X-XSRF-TOKEN. Works across app./api. subdomains.
 			.csrf(csrf -> csrf.csrfTokenRepository(csrfTokenRepository())
-				.csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()))
+				.csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
+				// Called by the school's SMS phone (signed webhooks) and, locally, by the API itself (fake phone): no browser.
+				.ignoringRequestMatchers("/api/v1/public/sms-gate/**", "/api/v1/dev/sms-gate/**"))
 			.httpBasic(AbstractHttpConfigurer::disable)
 			.formLogin(AbstractHttpConfigurer::disable)
 			.requestCache(cache -> cache.disable())

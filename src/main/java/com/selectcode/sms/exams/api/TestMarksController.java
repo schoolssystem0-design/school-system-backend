@@ -1,5 +1,7 @@
 package com.selectcode.sms.exams.api;
 
+import com.selectcode.sms.exams.app.TestMarkMessages;
+import com.selectcode.sms.exams.app.TestMarkMessages.TestMarksSmsReport;
 import com.selectcode.sms.exams.app.TestMarksService;
 import com.selectcode.sms.exams.app.TestMarksService.ClassTestInput;
 import com.selectcode.sms.exams.app.TestMarksService.ClassTestView;
@@ -48,8 +50,18 @@ class TestMarksController {
 
 	private final TestMarksService tests;
 
-	TestMarksController(TestMarksService tests) {
+	private final TestMarkMessages messages;
+
+	TestMarksController(TestMarksService tests, TestMarkMessages messages) {
 		this.tests = tests;
+		this.messages = messages;
+	}
+
+	/** Sends this test's marks to families by SMS. Safe to repeat: each student's marks go out once. */
+	@PreAuthorize("hasAuthority('" + Permissions.MESSAGES_SEND + "')")
+	@PostMapping("/{id}/sms")
+	TestMarksSmsReport sendMarks(@PathVariable long id) {
+		return messages.send(id);
 	}
 
 	@PreAuthorize(VIEW)

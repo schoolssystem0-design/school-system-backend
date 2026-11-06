@@ -62,6 +62,9 @@ public class Family extends TenantScopedEntity {
 	@Column(length = 1000)
 	private String remarks;
 
+	@Column(name = "message_language", nullable = false, length = 5)
+	private String messageLanguage = "EN";
+
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt = Instant.now();
 
@@ -93,12 +96,15 @@ public class Family extends TenantScopedEntity {
 		emergencyPhone = d.emergencyPhone();
 		preferredChannel = d.preferredChannel() == null ? "SMS" : d.preferredChannel();
 		remarks = d.remarks();
+		if (d.messageLanguage() != null) {
+			messageLanguage = d.messageLanguage();
+		}
 		updatedAt = now;
 	}
 
 	public FamilyDetails details() {
 		return new FamilyDetails(fatherName, fatherCnic, fatherPhone, fatherProfession, motherName, motherCnic, motherPhone,
-				email, address, emergencyName, emergencyPhone, preferredChannel, remarks);
+				email, address, emergencyName, emergencyPhone, preferredChannel, remarks, messageLanguage);
 	}
 
 	/** Bulk data fix (FR 8.5): set one field. */
