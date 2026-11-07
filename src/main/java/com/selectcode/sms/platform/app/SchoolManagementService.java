@@ -65,9 +65,11 @@ public class SchoolManagementService {
 
 	private final org.springframework.context.ApplicationEventPublisher events;
 
-	SchoolManagementService(org.springframework.context.ApplicationEventPublisher events, SchoolRepository schools, SchoolDomainRepository domains, SchoolSetup schoolSetup,
-			SchoolUserAdministration userAdmin, AuditService audit, JdbcTemplate jdbc,
-			PlatformTransactionManager transactionManager, Clock clock) {
+	private final SchoolDeletion deletion;
+
+	SchoolManagementService(org.springframework.context.ApplicationEventPublisher events, SchoolRepository schools,
+			SchoolDomainRepository domains, SchoolSetup schoolSetup, SchoolUserAdministration userAdmin, AuditService audit,
+			JdbcTemplate jdbc, PlatformTransactionManager transactionManager, Clock clock, SchoolDeletion deletion) {
 		this.schools = schools;
 		this.domains = domains;
 		this.schoolSetup = schoolSetup;
@@ -77,6 +79,7 @@ public class SchoolManagementService {
 		this.transaction = new TransactionTemplate(transactionManager);
 		this.clock = clock;
 		this.events = events;
+		this.deletion = deletion;
 	}
 
 	public List<SchoolView> list() {
@@ -146,6 +149,17 @@ public class SchoolManagementService {
 			audit.recordPlatform("SCHOOL_REACTIVATED", id, null);
 			return view(school);
 		});
+	}
+
+	/** Permanently removes the school and all its data. The school code must be retyped to confirm. */
+	public void delete(long id, String confirmCode, String reason) {
+		String why = required(reason, "Reason");
+		School school = find(id);
+		SchoolDeletion.requireCodeMatch(confirmCode, school);
+		String code = school.getCode();
+		String name = school.getName();
+		audit.recordPlatform("SCHOOL_DELETED", id, Map.of("code", code, "name", name, "reason", why));
+		deletion.delete(id);
 	}
 
 	public SchoolView addDomain(long id, String host, boolean primary) {

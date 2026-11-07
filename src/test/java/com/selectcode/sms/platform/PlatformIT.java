@@ -200,6 +200,26 @@ class PlatformIT extends IntegrationTest {
 	}
 
 	@Test
+	void deletingASchoolRemovesItsData() throws Exception {
+		var school = TestData.school("DEL");
+		TestData.admin(school, "admin", "password-del1");
+		long id = school.id();
+		var db = TestDatabase.superuser();
+		assertThat(db.queryForObject("select count(*) from app_user where school_id = ?", Long.class, id)).isEqualTo(1);
+
+		owner.post("/api/v1/platform/schools/" + id + "/delete",
+				"{\"confirmCode\":\"WRONG\",\"reason\":\"Test removal\"}").andExpect(status().isUnprocessableContent());
+		owner.post("/api/v1/platform/schools/" + id + "/delete",
+				"{\"confirmCode\":\"" + school.code() + "\",\"reason\":\"Test removal\"}").andExpect(status().isNoContent());
+
+		assertThat(db.queryForObject("select count(*) from school where id = ?", Long.class, id)).isZero();
+		assertThat(db.queryForObject("select count(*) from app_user where school_id = ?", Long.class, id)).isZero();
+		assertThat(db.queryForObject(
+				"select count(*) from platform_audit_log where school_id = ? and action = 'SCHOOL_DELETED'", Long.class, id))
+			.isEqualTo(1);
+	}
+
+	@Test
 	void overviewListsEverySchoolWithItsOwnCounts() throws Exception {
 		var a = TestData.school("OVA");
 		var b = TestData.school("OVB");

@@ -79,6 +79,9 @@ class PlatformController {
 	record SuspendRequest(@NotBlank @Size(max = 500) String reason) {
 	}
 
+	record DeleteSchoolRequest(@NotBlank @Size(max = 20) String confirmCode, @NotBlank @Size(max = 500) String reason) {
+	}
+
 	record DomainRequest(@NotBlank @Size(max = 253) String host, Boolean primary) {
 	}
 
@@ -188,6 +191,13 @@ class PlatformController {
 	@PostMapping("/schools/{id}/reactivate")
 	SchoolView reactivate(@PathVariable long id) {
 		return schools.reactivate(id);
+	}
+
+	@PreAuthorize(SUPER_ADMIN)
+	@PostMapping("/schools/{id}/delete")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	void deleteSchool(@PathVariable long id, @Valid @RequestBody DeleteSchoolRequest body) {
+		schools.delete(id, body.confirmCode(), body.reason());
 	}
 
 	@PreAuthorize(SUPER_ADMIN)

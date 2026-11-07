@@ -27,7 +27,7 @@ spring:
         jdbc:
           time_zone: UTC
   session:
-    timeout: ${APP_SESSION_IDLE_MINUTES:30}m
+    timeout: ${APP_SESSION_IDLE_MINUTES:10}m
     jdbc:
       initialize-schema: never
   # SMTP is switched on by SPRING_MAIL_HOST (+ _PORT, _USERNAME, _PASSWORD). These defaults make 587 work out of the box
