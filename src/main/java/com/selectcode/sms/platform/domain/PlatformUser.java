@@ -94,12 +94,11 @@ public class PlatformUser {
 		updatedAt = now;
 	}
 
-	/** Staging recovery only: apply bootstrap password and clear lockout / TOTP so sign-in can start over. */
+	/** Staging recovery only: apply bootstrap password and clear lockout; keeps an enrolled authenticator if present. */
 	public void applyBootstrapPassword(String newPasswordHash, Instant now) {
 		passwordHash = newPasswordHash;
 		failedAttempts = 0;
 		lockedUntil = null;
-		totpSecret = null;
 		updatedAt = now;
 	}
 

@@ -47,7 +47,7 @@ class SuperAdminBootstrapTest {
 		when(users.findByEmailIgnoreCase(EMAIL)).thenReturn(Optional.of(user));
 		bootstrap(users).run(null);
 		assertThat(encoder.matches(RECOVERY_PASSWORD, user.getPasswordHash())).isTrue();
-		assertThat(user.getTotpSecret()).isNull();
+		assertThat(user.getTotpSecret()).isEqualTo("JBSWY3DPEHPK3PXP");
 		verify(users).save(user);
 	}
 
