@@ -63,6 +63,9 @@ public class AppUser extends TenantScopedEntity {
 	@Column(length = 30)
 	private String phone;
 
+	@Column(name = "photo_file_id")
+	private Long photoFileId;
+
 	@Enumerated(EnumType.STRING)
 	@Column(name = "data_scope", nullable = false, length = 30)
 	private DataScope dataScope = DataScope.ALL;
@@ -191,6 +194,15 @@ public class AppUser extends TenantScopedEntity {
 
 	public String getPhone() {
 		return phone;
+	}
+
+	public Long getPhotoFileId() {
+		return photoFileId;
+	}
+
+	public void changePhoto(Long fileId, Instant now) {
+		this.photoFileId = fileId;
+		updatedAt = now;
 	}
 
 	public DataScope getDataScope() {

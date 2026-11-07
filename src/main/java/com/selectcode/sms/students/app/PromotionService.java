@@ -132,7 +132,7 @@ public class PromotionService {
 			if (last.effectiveTo() == null || last.effectiveTo().isAfter(from.endDate())) {
 				enrolments.close(last.id(), from.endDate());
 			}
-			enrolments.create(student.getId(), to.id(), section.classId(), section.id(), null, to.startDate(), null,
+			enrolments.create(student.getId(), to.id(), section.classId(), section.id(), to.startDate(), null,
 					item.decision() == Decision.PROMOTE ? "PROMOTION" : "REPEAT", item.reason());
 			if (item.decision() == Decision.PROMOTE) {
 				promoted++;

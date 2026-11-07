@@ -40,7 +40,7 @@ public class RegisterService {
 
 	public static final Set<String> STATUSES = Set.of("P", "L", "HD", "A", "LV");
 
-	public record RegisterEntry(long studentId, String grNo, String name, String rollNo, String status, boolean saved,
+	public record RegisterEntry(long studentId, String grNo, String name, String status, boolean saved,
 			LocalTime arrivalTime, String note, boolean onApprovedLeave) {
 	}
 
@@ -116,14 +116,14 @@ public class RegisterService {
 				select student_id from leave_application where person_type = 'STUDENT' and status = 'APPROVED'
 				  and date_from <= ? and date_to >= ?""", Long.class, Date.valueOf(date), Date.valueOf(date)));
 		List<RegisterEntry> rows = jdbc.query("""
-				select s.id, s.gr_no, s.name, e.roll_no from enrolment e join student s on s.id = e.student_id
+				select s.id, s.gr_no, s.name from enrolment e join student s on s.id = e.student_id
 				where e.section_id = ? and e.effective_from <= ? and (e.effective_to is null or e.effective_to >= ?)
-				order by nullif(regexp_replace(coalesce(e.roll_no, ''), '\\D', '', 'g'), '')::int nulls last, s.name""",
+				order by s.name, s.gr_no""",
 				(rs, i) -> {
 					long id = rs.getLong(1);
 					Object[] s = saved.get(id);
 					boolean leave = onLeave.contains(id);
-					return new RegisterEntry(id, rs.getString(2), rs.getString(3), rs.getString(4),
+					return new RegisterEntry(id, rs.getString(2), rs.getString(3),
 							s != null ? (String) s[0] : leave ? "LV" : "P", s != null,
 							s == null ? null : (LocalTime) s[1], s == null ? null : (String) s[2], leave);
 				}, sectionId, Date.valueOf(date), Date.valueOf(date));

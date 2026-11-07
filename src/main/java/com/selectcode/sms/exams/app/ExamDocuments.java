@@ -195,7 +195,7 @@ public class ExamDocuments {
 	// ----------------------------------------------------------- admit cards
 
 	/**
-	 * Admit cards (roll number slips), four to a page. With {@code withheldDefaulters}, students with fees overdue are
+	 * Admit cards, four to a page. With {@code withheldDefaulters}, students with fees overdue are
 	 * listed separately instead of getting a card (the school decides whether to use this).
 	 */
 	@Transactional(readOnly = true)
@@ -220,10 +220,8 @@ public class ExamDocuments {
 			int cards = 0;
 			for (long[] s : students) {
 				var st = jdbc.queryForMap("""
-						select st.gr_no, st.name, f.father_name,
-						       (select e.roll_no from enrolment e where e.student_id = st.id and e.section_id = ?
-						        order by e.effective_from desc limit 1) as roll_no
-						from student st join family f on f.id = st.family_id where st.id = ?""", s[1], s[0]);
+						select st.gr_no, st.name, f.father_name
+						from student st join family f on f.id = st.family_id where st.id = ?""", s[0]);
 				String section = sectionLabel(s[1]);
 				if (defaulters.contains(s[0])) {
 					held.add(new String[] { (String) st.get("gr_no"), (String) st.get("name"), section });
@@ -242,8 +240,7 @@ public class ExamDocuments {
 				for (String[] row : List.of(new String[] { "Name", (String) st.get("name") },
 						new String[] { "Father", (String) st.get("father_name") },
 						new String[] { "GR no.", (String) st.get("gr_no") },
-						new String[] { "Class", section },
-						new String[] { "Roll no.", (String) st.get("roll_no") })) {
+						new String[] { "Class", section })) {
 					card.addElement(new Paragraph(row[0] + ": " + PdfKit.nz(row[1]), CELL));
 				}
 				PdfPTable ds = new PdfPTable(new float[] { 3f, 4f });
@@ -423,7 +420,7 @@ public class ExamDocuments {
 		labelled(t, "Name", s.name());
 		labelled(t, "GR no.", s.grNo());
 		labelled(t, "Class", s.section());
-		labelled(t, "Roll no.", s.rollNo());
+		labelled(t, "", "");
 		if (!compact && s.attendancePercent() != null) {
 			labelled(t, "Attendance", s.attendancePercent() + "%");
 			labelled(t, "", "");

@@ -58,12 +58,12 @@ class StudentController {
 	record StudentInput(@NotBlank @Size(max = 200) String name, @NotBlank String gender, LocalDate dob,
 			@Size(max = 100) String placeOfBirth, @Size(max = 20) String bFormNo, @Size(max = 40) String religion,
 			@Size(max = 40) String nationality, @Size(max = 30) String phone, @Size(max = 500) String address,
-			@Size(max = 200) String previousSchool, @Size(max = 40) String studyGroup, @Size(max = 30) String seatNo,
-			Long photoFileId, @Size(max = 1000) String notes) {
+			@Size(max = 200) String previousSchool, @Size(max = 40) String studyGroup, Long photoFileId,
+			@Size(max = 1000) String notes) {
 
 		com.selectcode.sms.students.StudentDetails toDetails() {
 			return new com.selectcode.sms.students.StudentDetails(name, gender, dob, placeOfBirth, bFormNo, religion, nationality, phone, address,
-					previousSchool, studyGroup, seatNo, photoFileId, notes);
+					previousSchool, studyGroup, photoFileId, notes);
 		}
 	}
 
@@ -79,12 +79,12 @@ class StudentController {
 		}
 	}
 
-	record AdmitRequest(@Size(max = 20) String grNo, @NotNull @Valid StudentInput student, Long familyId,
-			@Valid NewFamily newFamily, @NotNull Long sectionId, LocalDate admissionDate, @Size(max = 20) String rollNo,
-			Long enquiryId) {
+	/** The GR number is given by the system. */
+	record AdmitRequest(@NotNull @Valid StudentInput student, Long familyId, @Valid NewFamily newFamily,
+			@NotNull Long sectionId, LocalDate admissionDate, Long enquiryId) {
 	}
 
-	record UpdateRequest(@Size(max = 20) String grNo, @NotNull @Valid StudentInput student, Long version) {
+	record UpdateRequest(@NotNull @Valid StudentInput student, Long version) {
 	}
 
 	record StudentFamilyRequest(@NotNull Long familyId) {
@@ -122,7 +122,7 @@ class StudentController {
 
 	record StudentCertificateRequest(@Size(max = 100) String conduct, @Size(max = 300) String reason,
 			@Size(max = 1000) String remarks, @Size(max = 100) String examination, @Size(max = 60) String session,
-			@Size(max = 30) String seatNo, @Size(max = 100) String result) {
+			@Size(max = 100) String result) {
 	}
 
 	record IdCardRequest(List<Long> studentIds, Long sectionId) {
@@ -194,9 +194,9 @@ class StudentController {
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
 	StudentView admit(@Valid @RequestBody AdmitRequest body) {
-		return students.admit(new Admission(body.grNo(), body.student().toDetails(), body.familyId(),
+		return students.admit(new Admission(body.student().toDetails(), body.familyId(),
 				body.newFamily() == null ? null : body.newFamily().toDetails(), body.sectionId(), body.admissionDate(),
-				body.rollNo(), body.enquiryId()));
+				body.enquiryId()));
 	}
 
 	// --------------------------------------------------------------- profile
@@ -216,7 +216,7 @@ class StudentController {
 	@PreAuthorize(MANAGE)
 	@PatchMapping("/{id}")
 	StudentView update(@PathVariable long id, @Valid @RequestBody UpdateRequest body) {
-		return students.update(id, body.grNo(), body.student().toDetails(), body.version() == null ? -1 : body.version());
+		return students.update(id, body.student().toDetails(), body.version() == null ? -1 : body.version());
 	}
 
 	@PreAuthorize("hasAuthority('" + Permissions.STUDENTS_MANAGE + "') and hasAuthority('" + Permissions.FAMILIES_MANAGE
@@ -360,9 +360,9 @@ class StudentController {
 	@PostMapping(value = "/{id}/certificates/{type}", produces = MediaType.APPLICATION_PDF_VALUE)
 	ResponseEntity<byte[]> certificate(@PathVariable long id, @PathVariable CertificateRegister.CertificateType type,
 			@Valid @RequestBody(required = false) StudentCertificateRequest body) {
-		var in = body == null ? new StudentCertificateRequest(null, null, null, null, null, null, null) : body;
+		var in = body == null ? new StudentCertificateRequest(null, null, null, null, null, null) : body;
 		return pdf(printing.certificate(id, type, new StudentPrintService.CertificateInput(in.conduct(), in.reason(),
-				in.remarks(), in.examination(), in.session(), in.seatNo(), in.result())),
+				in.remarks(), in.examination(), in.session(), in.result())),
 				type.name().toLowerCase() + "-certificate.pdf");
 	}
 

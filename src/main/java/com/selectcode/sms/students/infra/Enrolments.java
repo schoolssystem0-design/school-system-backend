@@ -16,12 +16,12 @@ import org.springframework.stereotype.Repository;
 public class Enrolments {
 
 	public record Enrolment(long id, long studentId, long yearId, String yearName, long classId, String className,
-			long sectionId, String sectionName, String rollNo, LocalDate effectiveFrom, LocalDate effectiveTo,
+			long sectionId, String sectionName, LocalDate effectiveFrom, LocalDate effectiveTo,
 			String kind, String reason) {
 	}
 
 	private static final String SELECT = """
-			select e.id, e.student_id, e.academic_year_id, y.name, e.class_id, c.name, e.section_id, s.name, e.roll_no,
+			select e.id, e.student_id, e.academic_year_id, y.name, e.class_id, c.name, e.section_id, s.name,
 			       e.effective_from, e.effective_to, e.kind, e.reason
 			from enrolment e
 			join academic_year y on y.id = e.academic_year_id
@@ -52,13 +52,13 @@ public class Enrolments {
 				this::map, studentId, yearId).stream().findFirst();
 	}
 
-	public long create(long studentId, long yearId, long classId, long sectionId, String rollNo, LocalDate from,
-			LocalDate to, String kind, String reason) {
+	public long create(long studentId, long yearId, long classId, long sectionId, LocalDate from, LocalDate to,
+			String kind, String reason) {
 		Long id = jdbc.queryForObject("""
-				insert into enrolment (school_id, student_id, academic_year_id, class_id, section_id, roll_no,
+				insert into enrolment (school_id, student_id, academic_year_id, class_id, section_id,
 				                       effective_from, effective_to, kind, reason)
-				values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) returning id""", Long.class, TenantContext.requireSchoolId(),
-				studentId, yearId, classId, sectionId, rollNo, Date.valueOf(from), to == null ? null : Date.valueOf(to),
+				values (?, ?, ?, ?, ?, ?, ?, ?, ?) returning id""", Long.class, TenantContext.requireSchoolId(),
+				studentId, yearId, classId, sectionId, Date.valueOf(from), to == null ? null : Date.valueOf(to),
 				kind, reason);
 		return id == null ? 0 : id;
 	}
@@ -77,13 +77,9 @@ public class Enrolments {
 				reason, enrolmentId);
 	}
 
-	public void setRollNo(long enrolmentId, String rollNo) {
-		jdbc.update("update enrolment set roll_no = ? where id = ?", rollNo, enrolmentId);
-	}
-
 	private Enrolment map(java.sql.ResultSet rs, int i) throws java.sql.SQLException {
 		return new Enrolment(rs.getLong(1), rs.getLong(2), rs.getLong(3), rs.getString(4), rs.getLong(5),
-				rs.getString(6), rs.getLong(7), rs.getString(8), rs.getString(9), rs.getDate(10).toLocalDate(),
-				rs.getDate(11) == null ? null : rs.getDate(11).toLocalDate(), rs.getString(12), rs.getString(13));
+				rs.getString(6), rs.getLong(7), rs.getString(8), rs.getDate(9).toLocalDate(),
+				rs.getDate(10) == null ? null : rs.getDate(10).toLocalDate(), rs.getString(11), rs.getString(12));
 	}
 }

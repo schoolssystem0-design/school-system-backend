@@ -51,7 +51,7 @@ public class ResultService {
 			String obtained, String grade, String flag, String percent, Boolean passed, String highest) {
 	}
 
-	public record StudentResult(long studentId, String grNo, String name, String rollNo, Long sectionId,
+	public record StudentResult(long studentId, String grNo, String name, Long sectionId,
 			String section, List<PaperResult> papers, String totalObtained, String totalMax, String percent,
 			String grade, String gradeRemark, Boolean passed, Integer position, int missing, String teacherRemark,
 			String principalRemark, String attendancePercent) {
@@ -195,9 +195,7 @@ public class ResultService {
 		for (long[] s : marks.students(examClassId, null)) {
 			long studentId = s[0];
 			var info = jdbc.queryForMap("""
-					select st.gr_no, st.name, (select e.roll_no from enrolment e where e.student_id = st.id
-					   and e.section_id = ? order by e.effective_from desc limit 1) as roll_no
-					from student st where st.id = ?""", s[1], studentId);
+					select st.gr_no, st.name from student st where st.id = ?""", studentId);
 			Map<Long, Object[]> mine = markMap.getOrDefault(studentId, Map.of());
 			List<PaperResult> papers = new ArrayList<>();
 			BigDecimal obtained = BigDecimal.ZERO;
@@ -255,8 +253,7 @@ public class ResultService {
 			}
 			String[] r = remarks.getOrDefault(studentId, new String[2]);
 			String attPct = withAttendance && att != null ? att.percent(studentId, yearStart, ref).orElse(null) : null;
-			results.add(new StudentResult(studentId, (String) info.get("gr_no"), (String) info.get("name"),
-					(String) info.get("roll_no"), s[1],
+			results.add(new StudentResult(studentId, (String) info.get("gr_no"), (String) info.get("name"), s[1],
 					structure.findSection(s[1]).map(AcademicStructure.SectionRef::label).orElse(null), papers,
 					gradeOnly ? null : text(obtained), gradeOnly ? null : text(max), pct, grade, remark, passed, null,
 					missing, r[0], r[1], attPct));
@@ -269,7 +266,7 @@ public class ResultService {
 			List<Integer> positions = rank(percents, settings.text(SettingKey.POSITION_TIE_METHOD));
 			for (int i = 0; i < results.size(); i++) {
 				StudentResult x = results.get(i);
-				results.set(i, new StudentResult(x.studentId(), x.grNo(), x.name(), x.rollNo(), x.sectionId(), x.section(),
+				results.set(i, new StudentResult(x.studentId(), x.grNo(), x.name(), x.sectionId(), x.section(),
 						x.papers(), x.totalObtained(), x.totalMax(), x.percent(), x.grade(), x.gradeRemark(), x.passed(),
 						positions.get(i), x.missing(), x.teacherRemark(), x.principalRemark(), x.attendancePercent()));
 			}

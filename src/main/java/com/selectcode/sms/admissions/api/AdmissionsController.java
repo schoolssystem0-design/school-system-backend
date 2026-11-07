@@ -82,9 +82,9 @@ class AdmissionsController {
 			@Size(max = 254) String email, @Size(max = 500) String address) {
 	}
 
-	record EnrolRequest(@Size(max = 20) String grNo, @NotNull @Valid EnrolStudent student, Long familyId,
-			@Valid EnrolFamily newFamily, @NotNull Long sectionId, LocalDate admissionDate,
-			@Size(max = 20) String rollNo) {
+	/** The GR number is given by the system. */
+	record EnrolRequest(@NotNull @Valid EnrolStudent student, Long familyId, @Valid EnrolFamily newFamily,
+			@NotNull Long sectionId, LocalDate admissionDate) {
 	}
 
 	record ContentRequest(@NotBlank String kind, Long classId, @Size(max = 20000) String body) {
@@ -172,15 +172,15 @@ class AdmissionsController {
 	StudentService.StudentView enrol(@PathVariable long id, @Valid @RequestBody EnrolRequest body) {
 		var s = body.student();
 		var f = body.newFamily();
-		return admissions.enrol(id, new AdmissionsService.EnrolmentInput(body.grNo(),
+		return admissions.enrol(id, new AdmissionsService.EnrolmentInput(
 				new StudentDetails(s.name(), s.gender(), s.dob(), s.placeOfBirth(), s.bFormNo(), s.religion(),
-						s.nationality(), s.phone(), s.address(), s.previousSchool(), s.studyGroup(), null,
-						s.photoFileId(), null),
+						s.nationality(), s.phone(), s.address(), s.previousSchool(), s.studyGroup(), s.photoFileId(),
+						null),
 				body.familyId(),
 				f == null ? null : new FamilyDetails(f.fatherName(), f.fatherCnic(), f.fatherPhone(),
 						f.fatherProfession(), f.motherName(), f.motherCnic(), f.motherPhone(), f.email(), f.address(),
 						null, null, null, null),
-				body.sectionId(), body.admissionDate(), body.rollNo()));
+				body.sectionId(), body.admissionDate()));
 	}
 
 	// -------------------------------------------------------------- statuses

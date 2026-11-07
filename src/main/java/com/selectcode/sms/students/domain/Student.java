@@ -62,9 +62,6 @@ public class Student extends TenantScopedEntity {
 	@Column(name = "study_group", length = 40)
 	private String studyGroup;
 
-	@Column(name = "seat_no", length = 30)
-	private String seatNo;
-
 	@Column(name = "photo_file_id")
 	private Long photoFileId;
 
@@ -116,7 +113,6 @@ public class Student extends TenantScopedEntity {
 		address = d.address();
 		previousSchool = d.previousSchool();
 		studyGroup = d.studyGroup();
-		seatNo = d.seatNo();
 		photoFileId = d.photoFileId();
 		notes = d.notes();
 		updatedAt = now;
@@ -124,7 +120,7 @@ public class Student extends TenantScopedEntity {
 
 	public StudentDetails details() {
 		return new StudentDetails(name, gender, dob, placeOfBirth, bFormNo, religion, nationality, phone, address,
-				previousSchool, studyGroup, seatNo, photoFileId, notes);
+				previousSchool, studyGroup, photoFileId, notes);
 	}
 
 	public void withdraw(LocalDate date, Instant now) {

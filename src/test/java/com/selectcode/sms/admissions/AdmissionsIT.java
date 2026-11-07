@@ -107,7 +107,7 @@ class AdmissionsIT extends IntegrationTest {
 		// QA-ADM-004
 		long id = createEnquiry("Ayesha Noor", "0321-9998887");
 		String enrol = """
-				{"grNo":"2553","student":{"name":"Ayesha Noor","gender":"FEMALE","dob":"2019-05-14"},
+				{"student":{"name":"Ayesha Noor","gender":"FEMALE","dob":"2019-05-14"},
 				 "newFamily":{"fatherName":"Noor Ahmed","fatherPhone":"0321-9998887","fatherCnic":"35202-1234567-1"},
 				 "sectionId":%d}""".formatted(sectionId);
 		admin.post("/api/v1/admissions/enquiries/" + id + "/enrol", enrol)
@@ -118,7 +118,7 @@ class AdmissionsIT extends IntegrationTest {
 			.andExpect(status().isOk());
 		var student = admin.post("/api/v1/admissions/enquiries/" + id + "/enrol", enrol)
 			.andExpect(status().isCreated())
-			.andExpect(jsonPath("$.grNo").value("2553"))
+			.andExpect(jsonPath("$.grNo").isNotEmpty()) // given by the system
 			.andExpect(jsonPath("$.currentClass.className").value("Class 3"))
 			.andExpect(jsonPath("$.family.fatherName").value("Noor Ahmed"))
 			.andExpect(jsonPath("$.enquiryId").value(id));
@@ -138,17 +138,18 @@ class AdmissionsIT extends IntegrationTest {
 
 	@Test
 	void enrolmentIsAtomic() throws Exception {
-		// QA-ADM-005: a duplicate GR number fails the whole enrolment; no family or student is left behind.
+		// QA-ADM-005: an invalid student fails the whole enrolment; no family or student is left behind.
 		long id = createEnquiry("Bilal", "0300-7778889");
 		admin.post("/api/v1/admissions/enquiries/" + id + "/status", "{\"statusId\":%d}".formatted(statusId("APPROVED")));
 		admin.post("/api/v1/students", """
-				{"grNo":"100","student":{"name":"First","gender":"MALE"},"newFamily":{"fatherName":"X"},"sectionId":%d}"""
+				{"student":{"name":"First","gender":"MALE"},"newFamily":{"fatherName":"X"},"sectionId":%d}"""
 			.formatted(sectionId)).andExpect(status().isCreated());
 		Long familiesBefore = TestDatabase.superuser()
 			.queryForObject("select count(*) from family where school_id = ?", Long.class, school.id());
 		admin.post("/api/v1/admissions/enquiries/" + id + "/enrol", """
-				{"grNo":"100","student":{"name":"Bilal","gender":"MALE"},"newFamily":{"fatherName":"Y"},"sectionId":%d}"""
-			.formatted(sectionId)).andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("GR_TAKEN"));
+				{"student":{"name":"Bilal","gender":"UNKNOWN"},"newFamily":{"fatherName":"Y"},"sectionId":%d}"""
+			.formatted(sectionId)).andExpect(status().isUnprocessableContent())
+			.andExpect(jsonPath("$.code").value("GENDER_REQUIRED"));
 		assertThat(TestDatabase.superuser()
 			.queryForObject("select count(*) from family where school_id = ?", Long.class, school.id()))
 			.isEqualTo(familiesBefore);

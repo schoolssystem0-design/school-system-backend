@@ -34,7 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class MarksService {
 
-	public record MarkRow(long studentId, String grNo, String name, String rollNo, String obtained, String grade,
+	public record MarkRow(long studentId, String grNo, String name, String obtained, String grade,
 			String flag) {
 	}
 
@@ -138,12 +138,12 @@ public class MarksService {
 		}, examSubjectId);
 		LocalDate ref = referenceDate(examClassId);
 		List<MarkRow> rows = jdbc.query("""
-				select s.id, s.gr_no, s.name, e.roll_no from enrolment e join student s on s.id = e.student_id
+				select s.id, s.gr_no, s.name from enrolment e join student s on s.id = e.student_id
 				where e.section_id = ? and e.effective_from <= ? and (e.effective_to is null or e.effective_to >= ?)
-				order by nullif(regexp_replace(coalesce(e.roll_no, ''), '\\D', '', 'g'), '')::int nulls last, s.name""",
+				order by s.name, s.gr_no""",
 				(rs, i) -> {
 					Object[] m = marks.get(rs.getLong(1));
-					return new MarkRow(rs.getLong(1), rs.getString(2), rs.getString(3), rs.getString(4),
+					return new MarkRow(rs.getLong(1), rs.getString(2), rs.getString(3),
 							m == null || m[0] == null ? null : ((BigDecimal) m[0]).stripTrailingZeros().toPlainString(),
 							m == null ? null : (String) m[1], m == null ? null : (String) m[2]);
 				}, sectionId, Date.valueOf(ref), Date.valueOf(ref));

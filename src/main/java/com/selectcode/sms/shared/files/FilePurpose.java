@@ -5,7 +5,7 @@ import java.util.Set;
 
 /**
  * What a file is for: decides allowed types, maximum size, who may upload it and who may download it
- * (SECURITY.md §4, FR 5.11). An empty download set means any signed-in user of the school.
+ * (SECURITY.md §4, FR 5.11). An empty upload or download set means any signed-in user of the school.
  */
 public enum FilePurpose {
 
@@ -16,6 +16,8 @@ public enum FilePurpose {
 	/** Student or staff photo (ID cards, profiles). */
 	PHOTO(FileKind.IMAGE, Set.of(Permissions.STUDENTS_MANAGE, Permissions.ADMISSIONS_ENROL, Permissions.STAFF_MANAGE),
 			Set.of(Permissions.STUDENTS_VIEW, Permissions.STAFF_VIEW)),
+	/** A user account's profile photo: any signed-in user may upload one (their own) and see others'. */
+	USER_PHOTO(FileKind.IMAGE, Set.of(), Set.of()),
 	/** B-Form, birth certificate, previous school certificate… (FR 4.9): private. */
 	STUDENT_DOCUMENT(FileKind.DOCUMENT, Set.of(Permissions.STUDENTS_MANAGE, Permissions.ADMISSIONS_ENROL),
 			Set.of(Permissions.STUDENTS_PRIVATE_VIEW)),

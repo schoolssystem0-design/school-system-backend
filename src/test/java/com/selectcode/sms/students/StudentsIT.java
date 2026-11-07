@@ -77,6 +77,7 @@ class StudentsIT extends IntegrationTest {
 		admin.get("/api/v1/students/suggest-gr").andExpect(jsonPath("$.grNo").value("4"));
 		admin.get("/api/v1/students/" + ali)
 			.andExpect(jsonPath("$.grNo").value("1"))
+			.andExpect(jsonPath("$.currentClass.rollNo").doesNotExist())
 			.andExpect(jsonPath("$.currentClass.sectionName").value("A"))
 			.andExpect(jsonPath("$.details.phone").value("03005551112"));
 
@@ -162,9 +163,16 @@ class StudentsIT extends IntegrationTest {
 
 		// QA-STU-002
 		admin.put("/api/v1/students/bulk", """
-				{"field":"SEAT_NO","values":[{"studentId":%d,"value":"10101"},{"studentId":%d,"value":"10102"}]}"""
+				{"field":"STUDY_GROUP","values":[{"studentId":%d,"value":"Science"},{"studentId":%d,"value":"Arts"}]}"""
 			.formatted(a, b)).andExpect(jsonPath("$.updated").value(2));
-		admin.get("/api/v1/students/" + b).andExpect(jsonPath("$.details.seatNo").value("10102"));
+		admin.get("/api/v1/students/" + b).andExpect(jsonPath("$.details.studyGroup").value("Arts"));
+		// Roll and board seat numbers are no longer kept
+		admin.put("/api/v1/students/bulk", """
+				{"field":"SEAT_NO","values":[{"studentId":%d,"value":"10101"}]}""".formatted(a))
+			.andExpect(jsonPath("$.code").value("FIELD_NOT_ALLOWED"));
+		admin.put("/api/v1/students/bulk", """
+				{"field":"ROLL_NO","values":[{"studentId":%d,"value":"7"}]}""".formatted(a))
+			.andExpect(jsonPath("$.code").value("FIELD_NOT_ALLOWED"));
 	}
 
 	@Test

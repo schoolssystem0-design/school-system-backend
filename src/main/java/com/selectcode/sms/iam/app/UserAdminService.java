@@ -41,7 +41,7 @@ public class UserAdminService {
 
 	public record UserView(long id, String username, String displayName, String email, String phone, String status,
 			boolean locked, boolean mainAdmin, boolean mustChangePassword, String dataScope, List<RoleRef> roles,
-			Instant lastLoginAt, Instant createdAt, long version) {
+			Instant lastLoginAt, Instant createdAt, long version, Long photoFileId) {
 	}
 
 	public record UserInput(String username, String displayName, String email, String phone, List<Long> roleIds,
@@ -66,8 +66,12 @@ public class UserAdminService {
 
 	private final Clock clock;
 
+	private final com.selectcode.sms.shared.files.FileService files;
+
 	UserAdminService(AppUserRepository users, RoleRepository roles, RoleLinks roleLinks,
-			PasswordEncoder passwordEncoder, SessionRevoker sessions, AuditService audit, Clock clock) {
+			PasswordEncoder passwordEncoder, SessionRevoker sessions, AuditService audit, Clock clock,
+			com.selectcode.sms.shared.files.FileService files) {
+		this.files = files;
 		this.users = users;
 		this.roles = roles;
 		this.roleLinks = roleLinks;
@@ -246,7 +250,45 @@ public class UserAdminService {
 		return new UserView(user.getId(), user.getUsername(), user.getDisplayName(), user.getEmail(), user.getPhone(),
 				user.getStatus().name(), user.isLocked(clock.instant()), user.isMainAdmin(),
 				user.isMustChangePassword(), user.getDataScope().name(), refs, user.getLastLoginAt(),
-				user.getCreatedAt(), user.getVersion());
+				user.getCreatedAt(), user.getVersion(), user.getPhotoFileId());
+	}
+
+	/** An administrator sets (or removes, with null) a user's profile photo. */
+	@Transactional
+	public UserView changePhoto(long id, Long fileId) {
+		AppUser user = find(id);
+		Long before = user.getPhotoFileId();
+		user.changePhoto(checkedPhoto(fileId), clock.instant());
+		users.flush();
+		audit.record("USER_PHOTO_CHANGED", "app_user", id, java.util.Collections.singletonMap("photoFileId", before),
+				java.util.Collections.singletonMap("photoFileId", fileId));
+		return view(user);
+	}
+
+	/** The signed-in user sets (or removes) their own profile photo. */
+	@Transactional
+	public Long changeOwnPhoto(Long fileId) {
+		var actor = CurrentActor.require();
+		if (actor.actorType() != com.selectcode.sms.shared.security.ActorType.USER) {
+			throw ApiException.businessRule("NOT_A_SCHOOL_USER", "Only school users have a profile photo");
+		}
+		AppUser user = find(actor.actorId());
+		user.changePhoto(checkedPhoto(fileId), clock.instant());
+		users.flush();
+		audit.record("OWN_PHOTO_CHANGED", "app_user", user.getId(), null,
+				java.util.Collections.singletonMap("photoFileId", fileId));
+		return user.getPhotoFileId();
+	}
+
+	private Long checkedPhoto(Long fileId) {
+		if (fileId == null) {
+			return null;
+		}
+		var file = files.find(fileId).orElseThrow(() -> ApiException.businessRule("FILE_UNKNOWN", "Photo not found"));
+		if (!"USER_PHOTO".equals(file.purpose())) {
+			throw ApiException.businessRule("FILE_PURPOSE_MISMATCH", "Upload the picture as a profile photo");
+		}
+		return fileId;
 	}
 
 	private static Map<String, Object> snapshot(AppUser user, List<Long> roleIds) {

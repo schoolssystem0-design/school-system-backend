@@ -44,7 +44,8 @@ public class FileService {
 
 	@Transactional
 	public FileInfo upload(FilePurpose purpose, String originalName, byte[] content) {
-		if (purpose.uploadPermissions.stream().noneMatch(CurrentActor::hasPermission)) {
+		CurrentActor.require();
+		if (!purpose.uploadPermissions.isEmpty() && purpose.uploadPermissions.stream().noneMatch(CurrentActor::hasPermission)) {
 			throw new ApiException(HttpStatus.FORBIDDEN, "FORBIDDEN", "You cannot upload this type of file");
 		}
 		if (content.length == 0) {

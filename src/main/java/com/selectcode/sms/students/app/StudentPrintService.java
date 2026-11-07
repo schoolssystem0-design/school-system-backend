@@ -33,7 +33,7 @@ public class StudentPrintService {
 
 	/** Optional details typed when issuing a certificate. */
 	public record CertificateInput(String conduct, String reason, String remarks, String examination, String session,
-			String seatNo, String result) {
+			String result) {
 	}
 
 	private final StudentService students;
@@ -122,9 +122,9 @@ public class StudentPrintService {
 				if (blank(in.examination()) || blank(in.result())) {
 					throw ApiException.businessRule("FIELD_REQUIRED", "Enter the examination and the result");
 				}
-				paragraphs.add("This is to certify that %s, appeared in the %s examination%s under Seat No. %s and passed with %s."
+				paragraphs.add("This is to certify that %s, appeared in the %s examination%s and passed with %s."
 					.formatted(who, in.examination().trim(), blank(in.session()) ? "" : " held in " + in.session().trim(),
-							blank(in.seatNo()) ? "—" : in.seatNo().trim(), in.result().trim()));
+							in.result().trim()));
 				paragraphs.add("This provisional certificate is issued pending the official certificate from the board.");
 			}
 			case HOPE -> {

@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.selectcode.sms.shared.security.Permissions;
+import com.selectcode.sms.support.TestDatabase;
 import com.selectcode.sms.support.ApiClient;
 import com.selectcode.sms.support.IntegrationTest;
 import com.selectcode.sms.support.TestData;
@@ -133,6 +134,37 @@ class SchoolSetupIT extends IntegrationTest {
 			.andExpect(status().isConflict());
 
 		admin.get("/api/v1/files/" + logoId).andExpect(status().isOk()).andExpect(content().bytes(PNG));
+
+		// The app shows the logo: in the signed-in user's info, and publicly on the sign-in page by school code
+		admin.get("/api/v1/auth/me").andExpect(jsonPath("$.school.logoFileId").value(logoId));
+		new ApiClient(mvc).get("/api/v1/public/schools/" + school.code().toLowerCase() + "/logo")
+			.andExpect(status().isOk()).andExpect(content().bytes(PNG));
+		new ApiClient(mvc).get("/api/v1/public/schools/NO-SUCH-SCHOOL/logo").andExpect(status().isNotFound());
+	}
+
+	@Test
+	void everyUserCanHaveAProfilePhoto() throws Exception {
+		// A user without any upload permission sets their own photo
+		TestData.userWithPermissions(school, "clerk", "clerk-password-1", Permissions.ACADEMICS_VIEW);
+		ApiClient clerk = new ApiClient(mvc);
+		clerk.login(school.code(), "clerk", "clerk-password-1").andExpect(status().isOk());
+		clerk.get("/api/v1/auth/me").andExpect(jsonPath("$.photoFileId").doesNotExist());
+		long photo = ((Number) ApiClient.json(clerk.upload("/api/v1/files", "USER_PHOTO", "me.png", PNG)
+			.andExpect(status().isOk()), "$.id")).longValue();
+		clerk.put("/api/v1/auth/me/photo", "{\"fileId\":%d}".formatted(photo)).andExpect(jsonPath("$.photoFileId").value(photo));
+		clerk.get("/api/v1/auth/me").andExpect(jsonPath("$.photoFileId").value(photo));
+		// Another kind of file is refused as a photo
+		long stamp = ((Number) ApiClient.json(admin.upload("/api/v1/files", "SCHOOL_STAMP", "s.png", PNG), "$.id")).longValue();
+		clerk.put("/api/v1/auth/me/photo", "{\"fileId\":%d}".formatted(stamp))
+			.andExpect(jsonPath("$.code").value("FILE_PURPOSE_MISMATCH"));
+		// The administrator sees it in the user list and can change or remove it
+		long clerkId = TestDatabase.superuser().queryForObject(
+				"select id from app_user where school_id = ? and username = 'clerk'", Long.class, school.id());
+		admin.get("/api/v1/iam/users/" + clerkId).andExpect(jsonPath("$.photoFileId").value(photo));
+		admin.put("/api/v1/iam/users/" + clerkId + "/photo", "{\"fileId\":null}").andExpect(status().isOk())
+			.andExpect(jsonPath("$.photoFileId").doesNotExist());
+		// Without the user-management permission, another user's photo cannot be changed
+		clerk.put("/api/v1/iam/users/" + clerkId + "/photo", "{\"fileId\":null}").andExpect(status().isForbidden());
 	}
 
 	@Test

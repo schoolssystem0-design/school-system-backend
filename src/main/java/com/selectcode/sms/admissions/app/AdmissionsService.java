@@ -56,8 +56,8 @@ public class AdmissionsService {
 	}
 
 	/** Enrolling an approved enquiry: the admission form is pre-filled from it (FR 4.6, 4.7). */
-	public record EnrolmentInput(String grNo, StudentDetails student, Long familyId, FamilyDetails newFamily,
-			long sectionId, LocalDate admissionDate, String rollNo) {
+	public record EnrolmentInput(StudentDetails student, Long familyId, FamilyDetails newFamily, long sectionId,
+			LocalDate admissionDate) {
 	}
 
 	private final EnquiryRepository enquiries;
@@ -297,8 +297,8 @@ public class AdmissionsService {
 		if (!EnquiryStatuses.APPROVED.equals(status.systemCode())) {
 			throw ApiException.businessRule("NOT_APPROVED", "Approve the admission before enrolling");
 		}
-		var created = students.admit(new StudentService.Admission(in.grNo(), in.student(), in.familyId(),
-				in.newFamily(), in.sectionId(), in.admissionDate(), in.rollNo(), enquiryId));
+		var created = students.admit(new StudentService.Admission(in.student(), in.familyId(), in.newFamily(),
+				in.sectionId(), in.admissionDate(), enquiryId));
 		e.enrolled(created.id(), statuses.bySystemCode(EnquiryStatuses.ENROLLED).id(), clock.instant());
 		audit.record("ENQUIRY_ENROLLED", "enquiry", enquiryId, null,
 				Map.of("studentId", created.id(), "grNo", created.grNo()));

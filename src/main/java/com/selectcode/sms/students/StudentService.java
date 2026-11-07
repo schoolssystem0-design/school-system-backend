@@ -38,15 +38,15 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class StudentService {
 
-	public static final Set<String> BULK_FIELDS = Set.of("SEAT_NO", "STUDY_GROUP", "DOB", "B_FORM_NO", "RELIGION",
-			"NATIONALITY", "ROLL_NO");
+	public static final Set<String> BULK_FIELDS = Set.of("STUDY_GROUP", "DOB", "B_FORM_NO", "RELIGION",
+			"NATIONALITY");
 
 	public record FamilySummary(long id, String familyNo, String fatherName, String motherName, String fatherPhone,
 			String motherPhone) {
 	}
 
 	public record CurrentClass(long enrolmentId, long yearId, String yearName, long classId, String className,
-			long sectionId, String sectionName, String rollNo, LocalDate since) {
+			long sectionId, String sectionName, LocalDate since) {
 	}
 
 	/** {@code privateHidden}: phone, address, B-Form and family contacts removed (FR 5.11). */
@@ -56,7 +56,7 @@ public class StudentService {
 	}
 
 	public record StudentRow(long id, String grNo, String name, String gender, String fatherName, String className,
-			String sectionName, Long sectionId, String rollNo, String status, Long photoFileId, String fatherPhone,
+			String sectionName, Long sectionId, String status, Long photoFileId, String fatherPhone,
 			Long familyId) {
 	}
 
@@ -68,9 +68,12 @@ public class StudentService {
 			String event, LocalDate date, String reason) {
 	}
 
-	/** New admission (FR 4.7, 4.8): an existing family or a new one, the class/section and admission date. */
-	public record Admission(String grNo, StudentDetails details, Long familyId, FamilyDetails newFamily, long sectionId,
-			LocalDate admissionDate, String rollNo, Long enquiryId) {
+	/**
+	 * New admission (FR 4.7, 4.8): an existing family or a new one, the class/section and admission date. The GR number
+	 * is always given by the system.
+	 */
+	public record Admission(StudentDetails details, Long familyId, FamilyDetails newFamily, long sectionId,
+			LocalDate admissionDate, Long enquiryId) {
 	}
 
 	public record StudentBulkValue(long studentId, String value) {
@@ -171,7 +174,7 @@ public class StudentService {
 				 from student s
 				 join family f on f.id = s.family_id
 				 left join lateral (
-				   select e1.class_id, e1.section_id, e1.roll_no from enrolment e1
+				   select e1.class_id, e1.section_id from enrolment e1
 				   where e1.student_id = s.id and (? ::bigint is null or e1.academic_year_id = ?)
 				     and (s.status = 'LEFT' or (e1.effective_from <= ? and (e1.effective_to is null or e1.effective_to >= ?)))
 				   order by e1.effective_from desc limit 1) e on true
@@ -194,13 +197,13 @@ public class StudentService {
 		pageArgs.add((long) page * size);
 		boolean privateOk = access.canSeePrivate();
 		List<StudentRow> rows = jdbc.query("""
-				select s.id, s.gr_no, s.name, s.gender, f.father_name, c.name, sec.name, e.section_id, e.roll_no,
+				select s.id, s.gr_no, s.name, s.gender, f.father_name, c.name, sec.name, e.section_id,
 				       s.status, s.photo_file_id, f.father_phone, s.family_id""" + from + where
 				+ " order by c.display_order nulls last, sec.name, s.name limit ? offset ?",
 				(rs, i) -> new StudentRow(rs.getLong(1), rs.getString(2), rs.getString(3), rs.getString(4),
-						rs.getString(5), rs.getString(6), rs.getString(7), (Long) rs.getObject(8), rs.getString(9),
-						rs.getString(10), (Long) rs.getObject(11), privateOk ? rs.getString(12) : null,
-						(Long) rs.getObject(13)),
+						rs.getString(5), rs.getString(6), rs.getString(7), (Long) rs.getObject(8),
+						rs.getString(9), (Long) rs.getObject(10), privateOk ? rs.getString(11) : null,
+						(Long) rs.getObject(12)),
 				pageArgs.toArray());
 		return PageResponse.of(rows, page, size, total == null ? 0 : total);
 	}
@@ -265,7 +268,7 @@ public class StudentService {
 		return enrolments.history(id);
 	}
 
-	/** Next free numeric GR number (FR 4.7: suggested, can be changed). */
+	/** Next free numeric GR number; every admission gets the next one automatically. */
 	@Transactional(readOnly = true)
 	public String suggestGrNo() {
 		Long max = jdbc.queryForObject("""
@@ -287,13 +290,10 @@ public class StudentService {
 		if (date.isAfter(year.endDate())) {
 			throw ApiException.businessRule("DATE_OUTSIDE_YEAR", "The admission date is after the end of " + year.name());
 		}
-		String grNo = PakFormats.trimToNull(a.grNo()) == null ? suggestGrNo() : a.grNo().trim();
-		if (!grNo.matches("[A-Za-z0-9/-]{1,20}")) {
-			throw ApiException.businessRule("GR_INVALID", "GR number: letters, numbers, / or - (max 20)");
-		}
-		if (students.findByGrNo(grNo).isPresent()) {
-			throw ApiException.conflict("GR_TAKEN", "GR number " + grNo + " is already used. Suggested: " + suggestGrNo());
-		}
+		// Serialise admissions of this school, so two at the same moment never get the same GR number.
+		jdbc.queryForObject("select pg_advisory_xact_lock(hashtext('gr-no'), ?::int)", Object.class,
+				TenantContext.requireSchoolId().intValue());
+		String grNo = suggestGrNo();
 		long familyId;
 		if (a.familyId() != null) {
 			if (!families.exists(a.familyId())) {
@@ -311,8 +311,7 @@ public class StudentService {
 		student.apply(validate(a.details()), clock.instant());
 		student = students.save(student);
 		LocalDate from = date.isBefore(year.startDate()) ? year.startDate() : date;
-		enrolments.create(student.getId(), year.id(), section.classId(), section.id(),
-				PakFormats.trimToNull(a.rollNo()), from, null, "ADMISSION", null);
+		enrolments.create(student.getId(), year.id(), section.classId(), section.id(), from, null, "ADMISSION", null);
 		audit.record("STUDENT_ADMITTED", "student", student.getId(), null,
 				Map.of("grNo", grNo, "name", student.getName(), "section", section.label(), "date", date.toString()));
 		events.publishEvent(new StudentEvents.Admitted(student.getId(), year.id(), section.classId(), date));
@@ -320,7 +319,7 @@ public class StudentService {
 	}
 
 	@Transactional
-	public StudentView update(long id, String grNo, StudentDetails input, long expectedVersion) {
+	public StudentView update(long id, StudentDetails input, long expectedVersion) {
 		Student s = find(id);
 		guardEdit(s);
 		if (s.getVersion() != expectedVersion) {
@@ -332,13 +331,7 @@ public class StudentService {
 			// Private fields were hidden from this editor: keep the stored values.
 			incoming = new StudentDetails(input.name(), input.gender(), input.dob(), input.placeOfBirth(), before.bFormNo(),
 					input.religion(), input.nationality(), before.phone(), before.address(), input.previousSchool(),
-					input.studyGroup(), input.seatNo(), input.photoFileId(), input.notes());
-		}
-		if (grNo != null && !grNo.isBlank() && !grNo.trim().equalsIgnoreCase(s.getGrNo())) {
-			if (students.findByGrNo(grNo.trim()).isPresent()) {
-				throw ApiException.conflict("GR_TAKEN", "GR number " + grNo + " is already used");
-			}
-			s.changeGrNo(grNo.trim(), clock.instant());
+					input.studyGroup(), input.photoFileId(), input.notes());
 		}
 		s.apply(validate(incoming), clock.instant());
 		students.flush();
@@ -360,38 +353,27 @@ public class StudentService {
 		return view(s, currentClass(s));
 	}
 
-	/** One field for many students at once, e.g. board seat numbers for Class 10 (FR 5.3). */
+	/** One field for many students at once, e.g. study groups for Class 10 (FR 5.3). */
 	@Transactional
 	public int bulkUpdate(String field, List<StudentBulkValue> values) {
 		if (!BULK_FIELDS.contains(field)) {
 			throw ApiException.businessRule("FIELD_NOT_ALLOWED", "This field cannot be changed in bulk");
 		}
-		YearRef year = "ROLL_NO".equals(field) ? yearContext.requireWritable() : null;
 		int count = 0;
 		for (StudentBulkValue v : values) {
 			Student s = find(v.studentId());
 			guardEdit(s);
 			String value = PakFormats.trimToNull(v.value());
-			if ("ROLL_NO".equals(field)) {
-				Enrolment e = enrolments.latestInYear(s.getId(), year.id())
-					.orElseThrow(() -> ApiException.businessRule("NOT_ENROLLED", s.getName() + " is not in this year"));
-				enrolments.setRollNo(e.id(), value);
-				audit.record("ROLL_NO_SET", "student", s.getId(), Map.of("rollNo", String.valueOf(e.rollNo())),
-						Map.of("rollNo", String.valueOf(value)));
-			}
-			else {
-				StudentDetails d = s.details();
-				StudentDetails changed = switch (field) {
-					case "SEAT_NO" -> copy(d, value, null, null, null, null, null);
-					case "STUDY_GROUP" -> copy(d, null, value, null, null, null, null);
-					case "DOB" -> copy(d, null, null, value == null ? null : LocalDate.parse(value), null, null, null);
-					case "B_FORM_NO" -> copy(d, null, null, null, PakFormats.cnic(value, s.getName()), null, null);
-					case "RELIGION" -> copy(d, null, null, null, null, value, null);
-					default -> copy(d, null, null, null, null, null, value);
-				};
-				s.apply(changed, clock.instant());
-				audit.record("STUDENT_BULK_UPDATED", "student", s.getId(), d, changed, field);
-			}
+			StudentDetails d = s.details();
+			StudentDetails changed = switch (field) {
+				case "STUDY_GROUP" -> copy(d, value, null, null, null, null);
+				case "DOB" -> copy(d, null, value == null ? null : LocalDate.parse(value), null, null, null);
+				case "B_FORM_NO" -> copy(d, null, null, PakFormats.cnic(value, s.getName()), null, null);
+				case "RELIGION" -> copy(d, null, null, null, value, null);
+				default -> copy(d, null, null, null, null, value);
+			};
+			s.apply(changed, clock.instant());
+			audit.record("STUDENT_BULK_UPDATED", "student", s.getId(), d, changed, field);
 			count++;
 		}
 		return count;
@@ -429,8 +411,7 @@ public class StudentService {
 		}
 		else {
 			enrolments.close(current.id(), date.minusDays(1));
-			enrolments.create(s.getId(), year.id(), target.classId(), toSectionId, current.rollNo(), date, null,
-					"MOVE", why);
+			enrolments.create(s.getId(), year.id(), target.classId(), toSectionId, date, null, "MOVE", why);
 		}
 		audit.record("STUDENT_MOVED", "student", id,
 				Map.of("section", current.className() + " - " + current.sectionName()),
@@ -490,7 +471,7 @@ public class StudentService {
 			throw ApiException.businessRule("DATE_INVALID", "The date must be in " + year.name() + " and after leaving");
 		}
 		s.readmit(clock.instant());
-		enrolments.create(id, year.id(), section.classId(), sectionId, null, from, null, "ADMISSION",
+		enrolments.create(id, year.id(), section.classId(), sectionId, from, null, "ADMISSION",
 				PakFormats.trimToNull(reason));
 		audit.record("STUDENT_READMITTED", "student", id, null, Map.of("section", section.label(), "date", from.toString()),
 				reason);
@@ -531,7 +512,7 @@ public class StudentService {
 				: access.referenceDate(year);
 		var e = enrolments.on(s.getId(), on).or(() -> enrolments.latestInYear(s.getId(), year.id()));
 		return e.map(x -> new CurrentClass(x.id(), x.yearId(), x.yearName(), x.classId(), x.className(),
-				x.sectionId(), x.sectionName(), x.rollNo(), x.effectiveFrom())).orElse(null);
+				x.sectionId(), x.sectionName(), x.effectiveFrom())).orElse(null);
 	}
 
 	private void guardEdit(Student s) {
@@ -555,7 +536,7 @@ public class StudentService {
 		StudentDetails d = s.details();
 		StudentDetails shown = privateOk ? d
 				: new StudentDetails(d.name(), d.gender(), d.dob(), d.placeOfBirth(), null, d.religion(), d.nationality(),
-						null, null, d.previousSchool(), d.studyGroup(), d.seatNo(), d.photoFileId(), d.notes());
+						null, null, d.previousSchool(), d.studyGroup(), d.photoFileId(), d.notes());
 		return new StudentView(s.getId(), s.getGrNo(), shown, s.getAdmissionDate(), s.getFirstClassId(), s.getStatus(),
 				s.getLeftDate(), fs, current, s.getEnquiryId(), !privateOk, s.getVersion());
 	}
@@ -581,16 +562,15 @@ public class StudentService {
 				PakFormats.cnic(d.bFormNo(), "B-Form number"), PakFormats.trimToNull(d.religion()),
 				PakFormats.trimToNull(d.nationality()), PakFormats.phone(d.phone(), "Phone"),
 				PakFormats.trimToNull(d.address()), PakFormats.trimToNull(d.previousSchool()),
-				PakFormats.trimToNull(d.studyGroup()), PakFormats.trimToNull(d.seatNo()), d.photoFileId(),
+				PakFormats.trimToNull(d.studyGroup()), d.photoFileId(),
 				PakFormats.trimToNull(d.notes()));
 	}
 
-	private static StudentDetails copy(StudentDetails d, String seatNo, String studyGroup, LocalDate dob, String bForm,
-			String religion, String nationality) {
+	private static StudentDetails copy(StudentDetails d, String studyGroup, LocalDate dob, String bForm, String religion,
+			String nationality) {
 		return new StudentDetails(d.name(), d.gender(), dob != null ? dob : d.dob(), d.placeOfBirth(),
 				bForm != null ? bForm : d.bFormNo(), religion != null ? religion : d.religion(),
 				nationality != null ? nationality : d.nationality(), d.phone(), d.address(), d.previousSchool(),
-				studyGroup != null ? studyGroup : d.studyGroup(), seatNo != null ? seatNo : d.seatNo(),
-				d.photoFileId(), d.notes());
+				studyGroup != null ? studyGroup : d.studyGroup(), d.photoFileId(), d.notes());
 	}
 }

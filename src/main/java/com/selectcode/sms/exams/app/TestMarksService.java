@@ -44,7 +44,7 @@ public class TestMarksService {
 			String subjectName, String name, LocalDate testDate, String maxMarks, int entered) {
 	}
 
-	public record TestMarkRow(long studentId, String grNo, String name, String rollNo, String obtained, boolean absent,
+	public record TestMarkRow(long studentId, String grNo, String name, String obtained, boolean absent,
 			String percent, Integer position) {
 	}
 
@@ -227,20 +227,20 @@ public class TestMarksService {
 		BigDecimal max = new BigDecimal(test.maxMarks());
 		Date on = Date.valueOf(test.testDate());
 		List<Object[]> students = jdbc.query("""
-				select s.id, s.gr_no, s.name, e.roll_no, m.obtained, coalesce(m.absent, false)
+				select s.id, s.gr_no, s.name, m.obtained, coalesce(m.absent, false)
 				from enrolment e join student s on s.id = e.student_id
 				left join test_mark m on m.student_id = s.id and m.class_test_id = ?
 				where e.section_id = ? and e.effective_from <= ? and (e.effective_to is null or e.effective_to >= ?)
-				order by nullif(regexp_replace(coalesce(e.roll_no, ''), '\\D', '', 'g'), '')::int nulls last, s.name""",
-				(rs, i) -> new Object[] { rs.getLong(1), rs.getString(2), rs.getString(3), rs.getString(4),
-						rs.getBigDecimal(5), rs.getBoolean(6) }, id, test.sectionId(), on, on);
-		List<BigDecimal> marks = students.stream().map(s -> (BigDecimal) s[4]).toList();
+				order by s.name, s.gr_no""",
+				(rs, i) -> new Object[] { rs.getLong(1), rs.getString(2), rs.getString(3), rs.getBigDecimal(4),
+						rs.getBoolean(5) }, id, test.sectionId(), on, on);
+		List<BigDecimal> marks = students.stream().map(s -> (BigDecimal) s[3]).toList();
 		List<Integer> positions = ResultService.rank(marks, settings.text(SettingKey.POSITION_TIE_METHOD));
 		List<TestMarkRow> rows = new ArrayList<>();
 		for (int i = 0; i < students.size(); i++) {
 			Object[] s = students.get(i);
-			BigDecimal got = (BigDecimal) s[4];
-			rows.add(new TestMarkRow((long) s[0], (String) s[1], (String) s[2], (String) s[3], text(got), (boolean) s[5],
+			BigDecimal got = (BigDecimal) s[3];
+			rows.add(new TestMarkRow((long) s[0], (String) s[1], (String) s[2], text(got), (boolean) s[4],
 					got == null ? null : ResultService.percent(got, max).toPlainString(), positions.get(i)));
 		}
 		return new TestSheet(test, mayEnter(test.sectionId(), test.subjectId(), test.academicYearId(), test.testDate()),

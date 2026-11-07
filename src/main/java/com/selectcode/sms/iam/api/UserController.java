@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -40,6 +41,10 @@ class UserController {
 	}
 
 	record ReasonRequest(@NotBlank @Size(max = 500) String reason) {
+	}
+
+	/** A file uploaded with purpose USER_PHOTO, or null to remove the photo. */
+	record PhotoRequest(Long fileId) {
 	}
 
 	private final UserAdminService users;
@@ -77,6 +82,13 @@ class UserController {
 	UserView update(@PathVariable long id, @Valid @RequestBody UpdateUserRequest body) {
 		return users.update(id, new UserInput(null, body.displayName(), body.email(), body.phone(), body.roleIds(),
 				body.dataScope()), body.version());
+	}
+
+	/** A profile photo is not sensitive: no verification code needed. */
+	@PreAuthorize("hasAuthority('" + Permissions.IAM_USER_MANAGE + "')")
+	@PutMapping("/{id}/photo")
+	UserView changePhoto(@PathVariable long id, @RequestBody PhotoRequest body) {
+		return users.changePhoto(id, body.fileId());
 	}
 
 	@PreAuthorize("hasAuthority('" + Permissions.IAM_USER_MANAGE + "')")

@@ -30,6 +30,7 @@ import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -44,12 +45,19 @@ class AuthController {
 			@NotBlank @Size(max = 200) String password) {
 	}
 
-	record SchoolInfo(long id, String code, String name) {
+	record SchoolInfo(long id, String code, String name, Long logoFileId) {
 	}
 
 	/** Who is signed in and what they may do. Used by the app to build menus (the API still checks every call). */
 	record MeResponse(String actorType, long userId, String displayName, String loginName, SchoolInfo school,
-			boolean superAdmin, List<String> permissions, boolean mustChangePassword, Instant stepUpUntil) {
+			boolean superAdmin, List<String> permissions, boolean mustChangePassword, Instant stepUpUntil,
+			Long photoFileId) {
+	}
+
+	record OwnPhotoRequest(Long fileId) {
+	}
+
+	record PhotoResponse(Long photoFileId) {
 	}
 
 	record CsrfResponse(String headerName, String token) {
@@ -79,8 +87,15 @@ class AuthController {
 
 	private final SecurityContextRepository securityContextRepository;
 
+	private final com.selectcode.sms.iam.app.ProfileImages images;
+
+	private final com.selectcode.sms.iam.app.UserAdminService userAdmin;
+
 	AuthController(SignInService signInService, AccountService accounts, StepUpService stepUp,
-			SecurityContextRepository securityContextRepository) {
+			SecurityContextRepository securityContextRepository, com.selectcode.sms.iam.app.ProfileImages images,
+			com.selectcode.sms.iam.app.UserAdminService userAdmin) {
+		this.images = images;
+		this.userAdmin = userAdmin;
 		this.signInService = signInService;
 		this.accounts = accounts;
 		this.stepUp = stepUp;
@@ -109,8 +124,8 @@ class AuthController {
 		securityContextRepository.saveContext(context, request, response);
 		// Permissions are loaded on the next request; the app calls /me right after sign-in.
 		return new MeResponse("USER", principal.userId(), principal.displayName(), principal.username(),
-				new SchoolInfo(principal.schoolId(), principal.schoolCode(), principal.schoolName()), false, List.of(),
-				false, null);
+				new SchoolInfo(principal.schoolId(), principal.schoolCode(), principal.schoolName(), null), false, List.of(),
+				false, null, null);
 	}
 
 	@AnyAuthenticated
@@ -125,11 +140,21 @@ class AuthController {
 			.sorted()
 			.toList();
 		SchoolInfo school = actor.tenantSchoolId() == null ? null
-				: new SchoolInfo(actor.tenantSchoolId(), actor.schoolCode(), actor.schoolName());
+				: new SchoolInfo(actor.tenantSchoolId(), actor.schoolCode(), actor.schoolName(),
+						images.schoolLogo(actor.tenantSchoolId()));
+		Long photo = actor.actorType() == com.selectcode.sms.shared.security.ActorType.USER
+				? images.userPhoto(actor.actorId()) : null;
 		return new MeResponse(actor.actorType().name(), actor.actorId(), actor.displayName(), actor.loginName(), school,
 				CurrentActor.isSuperAdmin(), permissions,
 				Boolean.TRUE.equals(request.getAttribute(RequestPrincipalFilter.MUST_CHANGE_PASSWORD_ATTRIBUTE)),
-				StepUp.verifiedUntil(request.getSession(false)));
+				StepUp.verifiedUntil(request.getSession(false)), photo);
+	}
+
+	/** The signed-in user changes (or removes, with null) their own profile photo. */
+	@AnyAuthenticated
+	@PutMapping("/me/photo")
+	PhotoResponse changeOwnPhoto(@RequestBody OwnPhotoRequest body) {
+		return new PhotoResponse(userAdmin.changeOwnPhoto(body.fileId()));
 	}
 
 	@AnyAuthenticated
