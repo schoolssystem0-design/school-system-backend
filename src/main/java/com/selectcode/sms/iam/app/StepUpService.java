@@ -51,12 +51,18 @@ public class StepUpService {
 			throw ApiException.businessRule("STEP_UP_UNAVAILABLE",
 					"Your account has no email address. Ask your administrator to add one.");
 		}
+		if (!messages.supports(OutgoingMessage.Channel.EMAIL)) {
+			// Say so plainly instead of "try again later": retrying cannot help until the server is set up.
+			throw ApiException.businessRule("EMAIL_NOT_SET_UP",
+					"Email is not set up on the server, so verification codes cannot be sent. Ask the system owner to set it up.");
+		}
 		String code = StepUp.newChallenge(session, clock.instant());
 		boolean sent = messages.send(OutgoingMessage.email(user.getEmail(), "Your verification code",
 				"Your verification code is " + code + ". It expires in 5 minutes.\n\n"
 						+ "If you did not request it, tell your administrator."));
 		if (!sent) {
-			throw ApiException.businessRule("STEP_UP_SEND_FAILED", "The code could not be sent. Try again later.");
+			throw ApiException.businessRule("STEP_UP_SEND_FAILED",
+					"The code could not be emailed. Try again in a minute; if it keeps failing, tell the system owner.");
 		}
 		return new CodeSent(mask(user.getEmail()));
 	}

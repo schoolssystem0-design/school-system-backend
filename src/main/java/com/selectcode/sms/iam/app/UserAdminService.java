@@ -106,9 +106,10 @@ public class UserAdminService {
 			throw ApiException.conflict("USERNAME_TAKEN", "This username is already used in this school");
 		}
 		List<Long> roleIds = validRoleIds(input.roleIds());
+		String email = checkedEmail(input.email(), containsAdminRole(roleIds));
 		String temporary = PasswordPolicy.temporary();
 		AppUser user = users.save(AppUser.create(username, required(input.displayName(), "Name"),
-				blankToNull(input.email()), blankToNull(input.phone()), scope(input.dataScope()),
+				email, blankToNull(input.phone()), scope(input.dataScope()),
 				passwordEncoder.encode(temporary), true));
 		if (staffId != null) {
 			if (users.findByStaffId(staffId).isPresent()) {
@@ -131,7 +132,8 @@ public class UserAdminService {
 		if (user.isMainAdmin() && !containsAdminRole(roleIds)) {
 			throw ApiException.conflict("MAIN_ADMIN_ROLE", "The main administrator must keep the Administrator role");
 		}
-		user.updateDetails(required(input.displayName(), "Name"), blankToNull(input.email()),
+		user.updateDetails(required(input.displayName(), "Name"),
+				checkedEmail(input.email(), user.isMainAdmin() || containsAdminRole(roleIds)),
 				blankToNull(input.phone()), scope(input.dataScope()), clock.instant());
 		roleLinks.replaceUserRoles(id, roleIds);
 		users.flush();
@@ -205,6 +207,25 @@ public class UserAdminService {
 			throw ApiException.businessRule("ROLE_UNKNOWN", "One of the selected roles does not exist");
 		}
 		return distinct;
+	}
+
+	/**
+	 * A valid email, or null. Administrators must have one: verification codes for sensitive actions go to it, so an
+	 * administrator without email could not add users or change settings.
+	 */
+	static String checkedEmail(String raw, boolean required) {
+		String email = raw == null ? null : raw.trim();
+		if (email == null || email.isEmpty()) {
+			if (required) {
+				throw ApiException.businessRule("EMAIL_REQUIRED",
+						"Administrators need an email address: verification codes are sent to it");
+			}
+			return null;
+		}
+		if (email.length() > 254 || !email.matches("[^@\\s]+@[^@\\s]+\\.[^@\\s]+")) {
+			throw ApiException.businessRule("EMAIL_INVALID", "Enter a valid email address, e.g. name@school.pk");
+		}
+		return email;
 	}
 
 	private boolean containsAdminRole(List<Long> roleIds) {

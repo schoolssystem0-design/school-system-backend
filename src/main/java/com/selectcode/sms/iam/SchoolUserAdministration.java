@@ -102,6 +102,10 @@ public class SchoolUserAdministration {
 			throw ApiException.businessRule("ADMIN_EMAIL_REQUIRED",
 					"The main administrator needs an email for verification codes and password resets");
 		}
+		if (!admin.email().trim().matches("[^@\\s]+@[^@\\s]+\\.[^@\\s]+") || admin.email().trim().length() > 254) {
+			throw ApiException.businessRule("ADMIN_EMAIL_INVALID",
+					"Enter a valid email address for the main administrator, e.g. principal@school.pk");
+		}
 		String username = admin.username() == null ? "" : admin.username().trim().toLowerCase(Locale.ROOT);
 		if (!username.matches("[a-z0-9][a-z0-9._-]{2,59}")) {
 			throw ApiException.businessRule("USERNAME_INVALID",

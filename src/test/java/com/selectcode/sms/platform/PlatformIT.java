@@ -76,6 +76,17 @@ class PlatformIT extends IntegrationTest {
 	}
 
 	@Test
+	void emailSetUpCanBeCheckedAndTested() throws Exception {
+		owner.get("/api/v1/platform/email").andExpect(status().isOk())
+			.andExpect(jsonPath("$.ready").value(true))
+			.andExpect(jsonPath("$.problems.length()").value(0));
+		owner.post("/api/v1/platform/email/test", "{\"to\":\"not-an-email\"}").andExpect(status().is4xxClientError());
+		owner.post("/api/v1/platform/email/test", "{\"to\":\"me@platform.test\"}").andExpect(jsonPath("$.sent").value(true));
+		// School users cannot see the server's email set-up
+		new ApiClient(mvc).get("/api/v1/platform/email").andExpect(status().isUnauthorized());
+	}
+
+	@Test
 	void createSchoolProvisionsRolesAdminAndSetupLink() throws Exception {
 		String code = "T" + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
 		var created = owner.post("/api/v1/platform/schools", """

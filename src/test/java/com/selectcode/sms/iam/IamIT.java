@@ -79,8 +79,15 @@ class IamIT extends IntegrationTest {
 	@Test
 	void newUserMustChangeTheTemporaryPassword() throws Exception {
 		admin.stepUp(outbox);
-		var created = admin.post("/api/v1/iam/users", """
+		// An administrator needs a real email: verification codes go there
+		admin.post("/api/v1/iam/users", """
 				{"username":"clerk","displayName":"Office Clerk","roleIds":[%d]}""".formatted(adminRoleId))
+			.andExpect(jsonPath("$.code").value("EMAIL_REQUIRED"));
+		admin.post("/api/v1/iam/users", """
+				{"username":"clerk","displayName":"Office Clerk","email":"clerk-at-school","roleIds":[%d]}""".formatted(adminRoleId))
+			.andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+		var created = admin.post("/api/v1/iam/users", """
+				{"username":"clerk","displayName":"Office Clerk","email":"clerk@school.test","roleIds":[%d]}""".formatted(adminRoleId))
 			.andExpect(status().isCreated());
 		String temporary = ApiClient.json(created, "$.temporaryPassword");
 

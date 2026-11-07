@@ -30,6 +30,17 @@ spring:
     timeout: ${APP_SESSION_IDLE_MINUTES:30}m
     jdbc:
       initialize-schema: never
+  # SMTP is switched on by SPRING_MAIL_HOST (+ _PORT, _USERNAME, _PASSWORD). These defaults make 587 work out of the box
+  # and stop a slow mail server from holding a request (sign-in codes) for minutes.
+  mail:
+    port: 587
+    properties:
+      "[mail.smtp.auth]": true
+      "[mail.smtp.starttls.enable]": true
+      "[mail.smtp.starttls.required]": true
+      "[mail.smtp.connectiontimeout]": 10000
+      "[mail.smtp.timeout]": 15000
+      "[mail.smtp.writetimeout]": 15000
   mvc:
     problemdetails:
       enabled: true
@@ -50,7 +61,12 @@ app:
   # Base URL of the Next.js app, used in emailed links (setup / password reset)
   web-base-url: ${APP_WEB_BASE_URL:http://localhost:3000}
   mail:
-    from: ${MAIL_FROM:no-reply@localhost}
+    # Sender address; defaults to SPRING_MAIL_USERNAME. Use the mail account's own address (or one verified with the provider).
+    from: ${MAIL_FROM:}
+    from-name: ${MAIL_FROM_NAME:School Management System}
+    # Email by HTTPS API instead of SMTP (hosting that blocks SMTP ports): brevo or resend, with MAIL_API_KEY.
+    provider: ${MAIL_PROVIDER:}
+    api-key: ${MAIL_API_KEY:}
   bootstrap:
     # First super admin (only used when none exists); remove after first sign-in
     superadmin-email: ${BOOTSTRAP_SUPERADMIN_EMAIL:}
