@@ -158,8 +158,9 @@ public class SchoolManagementService {
 		SchoolDeletion.requireCodeMatch(confirmCode, school);
 		String code = school.getCode();
 		String name = school.getName();
-		audit.recordPlatform("SCHOOL_DELETED", id, Map.of("code", code, "name", name, "reason", why));
 		deletion.delete(id);
+		// Recorded once the school is gone (so not linked to it); the entry keeps its id, code and name
+		audit.recordPlatform("SCHOOL_DELETED", null, Map.of("schoolId", id, "code", code, "name", name, "reason", why));
 	}
 
 	public SchoolView addDomain(long id, String host, boolean primary) {

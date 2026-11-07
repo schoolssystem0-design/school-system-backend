@@ -94,7 +94,7 @@ public class PlatformOverviewService {
 		return transaction.execute(tx -> {
 			Long total = jdbc.queryForObject("select count(*) from platform_audit_log", Long.class);
 			List<PlatformAuditRow> rows = jdbc.query("""
-					select a.id, a.at, p.name, a.action, a.school_id, s.code, a.details::text, a.ip
+					select a.id, a.at, p.name, a.action, a.school_id, coalesce(s.code, a.details->>'code'), a.details::text, a.ip
 					from platform_audit_log a
 					left join platform_user p on p.id = a.actor_id
 					left join school s on s.id = a.school_id

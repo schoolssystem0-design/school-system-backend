@@ -200,12 +200,61 @@ class PlatformIT extends IntegrationTest {
 	}
 
 	@Test
-	void deletingASchoolRemovesItsData() throws Exception {
+	void deletingASchoolRemovesAllItsDataAndNothingElse() throws Exception {
 		var school = TestData.school("DEL");
 		TestData.admin(school, "admin", "password-del1");
+		var other = TestData.school("KEEP");
+		TestData.admin(other, "admin", "password-keep1");
 		long id = school.id();
 		var db = TestDatabase.superuser();
-		assertThat(db.queryForObject("select count(*) from app_user where school_id = ?", Long.class, id)).isEqualTo(1);
+
+		// A school in use: year, class, students and families, attendance, test marks sent by SMS, fees and a payment
+		var admin = new ApiClient(mvc);
+		admin.login(school.code(), "admin", "password-del1").andExpect(status().isOk());
+		long year = TestData.yearAroundToday(school, true);
+		long class5 = TestData.schoolClass(school, "Class 5", 5);
+		long sec5a = TestData.section(school, class5, "A");
+		long maths = TestData.subject(school, "Mathematics");
+		var today = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Karachi"));
+		long[] kids = new long[2];
+		for (int i = 0; i < kids.length; i++) {
+			var r = admin.post("/api/v1/students", """
+					{"student":{"name":"Child %d","gender":"MALE"},"newFamily":{"fatherName":"Father %d","fatherPhone":"0300-123456%d"},
+					 "sectionId":%d,"admissionDate":"%s"}""".formatted(i, i, i, sec5a, today.minusDays(20)))
+				.andExpect(status().isCreated());
+			kids[i] = ((Number) ApiClient.json(r, "$.id")).longValue();
+		}
+		admin.put("/api/v1/attendance/registers/" + sec5a + "?date=" + today.minusDays(1),
+				"{\"marks\":[{\"studentId\":%d,\"status\":\"A\"}]}".formatted(kids[0]));
+		var t = admin.post("/api/v1/test-marks", """
+				{"sectionId":%d,"subjectId":%d,"name":"Monthly test","testDate":"%s","maxMarks":"25"}"""
+			.formatted(sec5a, maths, today.minusDays(1))).andExpect(status().isCreated());
+		long test = ((Number) ApiClient.json(t, "$.test.id")).longValue();
+		admin.put("/api/v1/test-marks/" + test + "/marks", "{\"marks\":[{\"studentId\":%d,\"obtained\":\"20\"}]}".formatted(kids[1]))
+			.andExpect(status().isOk());
+		admin.post("/api/v1/test-marks/" + test + "/sms").andExpect(status().isOk());
+		var h = admin.post("/api/v1/fees/heads", "{\"name\":\"Tuition\",\"frequency\":\"MONTHLY\",\"refundable\":false}")
+			.andExpect(status().isCreated());
+		long tuition = ((Number) ApiClient.json(h, "$.id")).longValue();
+		admin.put("/api/v1/fees/years/" + year + "/class-amounts",
+				"[{\"classId\":%d,\"feeHeadId\":%d,\"amount\":\"3500\"}]".formatted(class5, tuition)).andExpect(status().isOk());
+		admin.postWithKey("/api/v1/fees/bill-runs", "{\"period\":\"%s\",\"headIds\":[%d],\"issueDate\":\"%s\"}"
+			.formatted(java.time.YearMonth.from(today), tuition, today), "run-1").andExpect(status().is2xxSuccessful());
+		long family = ((Number) ApiClient.json(admin.get("/api/v1/students/" + kids[0]), "$.family.id")).longValue();
+		long cash = db.queryForObject("select id from ledger_account where school_id = ? and subtype = 'CASH'", Long.class, id);
+		admin.postWithKey("/api/v1/fees/payments", "{\"familyId\":%d,\"amount\":\"3500\",\"method\":\"CASH\",\"accountId\":%d}"
+			.formatted(family, cash), "pay-1").andExpect(status().isCreated());
+		assertThat(db.queryForObject("select count(*) from payment where school_id = ?", Long.class, id)).isPositive();
+		assertThat(db.queryForObject("select count(*) from message_outbox where school_id = ?", Long.class, id)).isPositive();
+
+		var tables = db.queryForList("""
+				select table_name from information_schema.columns
+				where table_schema = 'public' and column_name = 'school_id' and table_name not in ('school', 'platform_audit_log')""",
+				String.class);
+		long otherRows = 0;
+		for (String table : tables) {
+			otherRows += db.queryForObject("select count(*) from " + table + " where school_id = ?", Long.class, other.id());
+		}
 
 		owner.post("/api/v1/platform/schools/" + id + "/delete",
 				"{\"confirmCode\":\"WRONG\",\"reason\":\"Test removal\"}").andExpect(status().isUnprocessableContent());
@@ -213,10 +262,21 @@ class PlatformIT extends IntegrationTest {
 				"{\"confirmCode\":\"" + school.code() + "\",\"reason\":\"Test removal\"}").andExpect(status().isNoContent());
 
 		assertThat(db.queryForObject("select count(*) from school where id = ?", Long.class, id)).isZero();
-		assertThat(db.queryForObject("select count(*) from app_user where school_id = ?", Long.class, id)).isZero();
-		assertThat(db.queryForObject(
-				"select count(*) from platform_audit_log where school_id = ? and action = 'SCHOOL_DELETED'", Long.class, id))
-			.isEqualTo(1);
+		for (String table : tables) {
+			assertThat(db.queryForObject("select count(*) from " + table + " where school_id = ?", Long.class, id))
+				.as(table).isZero();
+		}
+		// The other school keeps every row; the platform history keeps the deletion
+		long otherAfter = 0;
+		for (String table : tables) {
+			otherAfter += db.queryForObject("select count(*) from " + table + " where school_id = ?", Long.class, other.id());
+		}
+		assertThat(otherAfter).isEqualTo(otherRows);
+		new ApiClient(mvc).login(other.code(), "admin", "password-keep1").andExpect(status().isOk());
+		assertThat(db.queryForObject("""
+				select count(*) from platform_audit_log where action = 'SCHOOL_DELETED' and details->>'code' = ?""",
+				Long.class, school.code())).isEqualTo(1);
+		owner.get("/api/v1/platform/audit").andExpect(jsonPath("$.items[0].schoolCode").value(school.code()));
 	}
 
 	@Test
