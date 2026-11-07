@@ -72,6 +72,13 @@ class SuperAdminBootstrap implements ApplicationRunner {
 		if (existing.isPresent()) {
 			if (resetPassword && stagingProfile && validPassword) {
 				PlatformUser user = existing.get();
+				// One-time recovery: only when the stored password differs. Once applied, later restarts (every
+				// deploy) leave the account alone, so the authenticator set up afterwards is not wiped each time.
+				if (passwordEncoder.matches(password, user.getPasswordHash())) {
+					log.warn("BOOTSTRAP_SUPERADMIN_RESET_PASSWORD is still set but already applied for {}; remove it",
+							trimmedEmail);
+					return;
+				}
 				user.applyBootstrapPassword(passwordEncoder.encode(password), clock.instant());
 				users.save(user);
 				log.warn(

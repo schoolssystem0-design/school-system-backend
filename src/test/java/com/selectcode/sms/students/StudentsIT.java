@@ -70,13 +70,13 @@ class StudentsIT extends IntegrationTest {
 
 	@Test
 	void admissionSearchAndClassStrength() throws Exception {
-		admin.get("/api/v1/students/suggest-gr").andExpect(jsonPath("$.grNo").value("1"));
+		admin.get("/api/v1/students/suggest-gr").andExpect(jsonPath("$.grNo").value("001"));
 		long ali = admit("Ali Raza", "MALE", sec7a, "0300-1000001");
 		admit("Fatima Zahra", "FEMALE", sec7a, "0300-1000002");
 		admit("Usman Ghani", "MALE", sec7b, "0300-1000003");
-		admin.get("/api/v1/students/suggest-gr").andExpect(jsonPath("$.grNo").value("4"));
+		admin.get("/api/v1/students/suggest-gr").andExpect(jsonPath("$.grNo").value("004"));
 		admin.get("/api/v1/students/" + ali)
-			.andExpect(jsonPath("$.grNo").value("1"))
+			.andExpect(jsonPath("$.grNo").value("001"))
 			.andExpect(jsonPath("$.currentClass.rollNo").doesNotExist())
 			.andExpect(jsonPath("$.currentClass.sectionName").value("A"))
 			.andExpect(jsonPath("$.details.phone").value("03005551112"));
@@ -85,6 +85,9 @@ class StudentsIT extends IntegrationTest {
 		admin.get("/api/v1/students?q=father of usman").andExpect(jsonPath("$.items[0].name").value("Usman Ghani"));
 		admin.get("/api/v1/students?q=0300 1000002").andExpect(jsonPath("$.items[0].name").value("Fatima Zahra"));
 		admin.get("/api/v1/students?q=1").andExpect(jsonPath("$.items[0].name").value("Ali Raza"));
+		admin.get("/api/v1/students?q=001").andExpect(jsonPath("$.items[0].name").value("Ali Raza"))
+			.andExpect(jsonPath("$.totalItems").value(1));
+		admin.get("/api/v1/students?q=3").andExpect(jsonPath("$.items[0].name").value("Usman Ghani"));
 		admin.get("/api/v1/students?sectionId=" + sec7a).andExpect(jsonPath("$.totalItems").value(2));
 
 		admin.get("/api/v1/students/strength")

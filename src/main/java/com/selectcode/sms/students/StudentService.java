@@ -141,7 +141,8 @@ public class StudentService {
 		String text = q == null ? "" : q.trim().toLowerCase();
 		if (!text.isEmpty()) {
 			String phone = PakFormats.phoneOrNull(q);
-			where.append(" and (lower(s.gr_no) = ? or lower(s.name) like ? or lower(coalesce(f.father_name, '')) like ?"
+			// GR "1" also finds "001"
+			where.append(" and (ltrim(lower(s.gr_no), '0') = ltrim(?, '0') or lower(s.name) like ? or lower(coalesce(f.father_name, '')) like ?"
 					+ " or f.father_phone = ? or f.mother_phone = ? or s.phone = ?)");
 			args.addAll(List.of(text, "%" + text + "%", "%" + text + "%"));
 			args.add(phone);
@@ -268,12 +269,12 @@ public class StudentService {
 		return enrolments.history(id);
 	}
 
-	/** Next free numeric GR number; every admission gets the next one automatically. */
+	/** Next free numeric GR number, at least three digits (001, 002 ... 010 ... 100); every admission gets the next one automatically. */
 	@Transactional(readOnly = true)
 	public String suggestGrNo() {
 		Long max = jdbc.queryForObject("""
 				select max(gr_no::bigint) from student where gr_no ~ '^[0-9]{1,15}$'""", Long.class);
-		return String.valueOf(max == null ? 1 : max + 1);
+		return "%03d".formatted(max == null ? 1 : max + 1);
 	}
 
 	// ---------------------------------------------------------------- changes
