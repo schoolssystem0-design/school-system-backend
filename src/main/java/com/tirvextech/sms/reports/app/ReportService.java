@@ -36,6 +36,7 @@ import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -547,6 +548,245 @@ public class ReportService {
 				+ ". Attendance is for this academic year so far.";
 		return new ReportDoc("CLASS LIST", List.of(label + (several ? " (" + shown.size() + " sections)" : ""),
 				"Academic Year " + year.name()), List.of(new Section("Students", note, columns, rows)));
+	}
+
+	// ------------------------------------------------- classes and sections
+
+	/** One section today: its students, class teacher, attendance and (with fee access) fees. */
+	public record SectionOverview(long sectionId, long classId, String className, String sectionName, String classTeacher,
+			int boys, int girls, int total, int newThisYear, int leftThisYear, boolean markedToday, int presentToday,
+			int absentToday, int leaveToday, String monthAttendance, String feesOutstanding, Integer defaulters) {
+	}
+
+	public record ClassOverview(long classId, String className, List<SectionOverview> sections, int boys, int girls,
+			int total) {
+	}
+
+	/**
+	 * {@code on}: the day the figures are for (today, or the year's last day for a past year); {@code today}: whether
+	 * "today" columns are filled; {@code fees}: whether fee columns are filled for this user.
+	 */
+	public record SchoolOverview(String year, LocalDate on, boolean today, boolean fees, List<ClassOverview> classes,
+			int sections, int boys, int girls, int total, int presentToday, int absentToday, int sectionsMarked) {
+	}
+
+	public record SectionStudent(long id, String grNo, String name, String gender, String fatherName, String fatherPhone,
+			String today, String feesOutstanding) {
+	}
+
+	/**
+	 * Every class with its sections and their figures for the selected year (FR 5.7 class strength, extended).
+	 * Teachers get only the sections they teach; fee figures only with fee access and the "all classes" scope.
+	 */
+	@Transactional(readOnly = true)
+	public SchoolOverview classesOverview() {
+		YearRef year = yearContext.requireSelected();
+		Period p = new Period(year, year.startDate(), year.endDate(), null, null);
+		LocalDate on = lastDay(p);
+		LocalDate today = MoneyInput.today(clock);
+		boolean isToday = on.equals(today);
+		Set<Long> allowed = allowedSections(p);
+		boolean fees = feesAllowed();
+		Date day = Date.valueOf(on);
+		Date start = Date.valueOf(year.startDate());
+
+		Map<Long, int[]> counts = new HashMap<>();
+		jdbc.query("""
+				select e.section_id, count(*) filter (where st.gender = 'MALE'), count(*) filter (where st.gender = 'FEMALE'),
+				       count(*) filter (where st.admission_date between ? and ?)
+				from enrolment e join student st on st.id = e.student_id
+				where e.academic_year_id = ? and e.effective_from <= ? and (e.effective_to is null or e.effective_to >= ?)
+				  and st.status = 'ACTIVE'
+				group by e.section_id""", rs -> {
+			counts.put(rs.getLong(1), new int[] { rs.getInt(2), rs.getInt(3), rs.getInt(4) });
+		}, start, day, year.id(), day, day);
+		Map<Long, Integer> left = new HashMap<>();
+		jdbc.query("""
+				select e.section_id, count(distinct e.student_id)
+				from withdrawal w join enrolment e on e.student_id = w.student_id and e.academic_year_id = w.academic_year_id
+				where w.academic_year_id = ? and w.leaving_date <= ?
+				  and e.effective_to between w.leaving_date - 1 and w.leaving_date
+				group by e.section_id""", rs -> {
+			left.put(rs.getLong(1), rs.getInt(2));
+		}, year.id(), day);
+		Map<Long, String> teachers = new HashMap<>();
+		jdbc.query("""
+				select ta.section_id, string_agg(s.name, ', ' order by s.name)
+				from teaching_assignment ta join staff s on s.id = ta.staff_id
+				where ta.academic_year_id = ? and ta.subject_id is null and ta.effective_from <= ?
+				  and (ta.effective_to is null or ta.effective_to >= ?)
+				group by ta.section_id""", rs -> {
+			teachers.put(rs.getLong(1), rs.getString(2));
+		}, year.id(), day, day);
+		Map<Long, int[]> todays = new HashMap<>();
+		if (isToday) {
+			jdbc.query("""
+					select section_id, count(*) filter (where status in ('P', 'L', 'HD')), count(*) filter (where status = 'A'),
+					       count(*) filter (where status = 'LV')
+					from student_attendance where att_date = ? group by section_id""", rs -> {
+				todays.put(rs.getLong(1), new int[] { rs.getInt(2), rs.getInt(3), rs.getInt(4) });
+			}, day);
+		}
+		LocalDate monthStart = on.withDayOfMonth(1).isBefore(year.startDate()) ? year.startDate() : on.withDayOfMonth(1);
+		Map<Long, String> month = new HashMap<>();
+		jdbc.query("""
+				select section_id, count(*) filter (where status = 'P'), count(*) filter (where status = 'L'),
+				       count(*) filter (where status = 'HD'), count(*) filter (where status = 'A'), count(*) filter (where status = 'LV')
+				from student_attendance where att_date between ? and ? group by section_id""", rs -> {
+			Counts c = new Counts(rs.getInt(2), rs.getInt(3), rs.getInt(4), rs.getInt(5), rs.getInt(6));
+			month.put(rs.getLong(1), c.marked() == 0 ? null : c.percent());
+		}, Date.valueOf(monthStart), day);
+		Map<Long, Object[]> money = new HashMap<>();
+		if (fees) {
+			jdbc.query("""
+					select e.section_id, coalesce(sum(v.balance) filter (where v.balance > 0), 0),
+					       count(distinct v.student_id) filter (where v.balance > 0 and v.due_date < ?)
+					from enrolment e join student st on st.id = e.student_id and st.status = 'ACTIVE'
+					join fee_line_status v on v.student_id = e.student_id
+					where e.academic_year_id = ? and e.effective_from <= ? and (e.effective_to is null or e.effective_to >= ?)
+					group by e.section_id""", rs -> {
+				money.put(rs.getLong(1), new Object[] { rs.getBigDecimal(2), rs.getInt(3) });
+			}, Date.valueOf(today), year.id(), day, day);
+		}
+
+		Map<Long, ClassOverview> classes = new LinkedHashMap<>();
+		Map<Long, List<SectionOverview>> byClass = new LinkedHashMap<>();
+		jdbc.query("""
+				select c.id, c.name, s.id, s.name from section s join school_class c on c.id = s.class_id
+				where s.status = 'ACTIVE' and c.status = 'ACTIVE' order by c.display_order, c.name, s.name""", rs -> {
+			long sectionId = rs.getLong(3);
+			if (allowed != null && !allowed.contains(sectionId)) {
+				return;
+			}
+			int[] n = counts.getOrDefault(sectionId, new int[3]);
+			int[] t = todays.get(sectionId);
+			Object[] m = money.get(sectionId);
+			SectionOverview s = new SectionOverview(sectionId, rs.getLong(1), rs.getString(2), rs.getString(4),
+					teachers.get(sectionId), n[0], n[1], n[0] + n[1], n[2], left.getOrDefault(sectionId, 0), t != null,
+					t == null ? 0 : t[0], t == null ? 0 : t[1], t == null ? 0 : t[2], month.get(sectionId),
+					fees ? MoneyInput.text(m == null ? BigDecimal.ZERO : (BigDecimal) m[0]) : null,
+					fees ? (m == null ? 0 : (Integer) m[1]) : null);
+			byClass.computeIfAbsent(s.classId(), k -> new ArrayList<>()).add(s);
+		});
+		byClass.forEach((classId, list) -> classes.put(classId, new ClassOverview(classId, list.getFirst().className(),
+				list, list.stream().mapToInt(SectionOverview::boys).sum(), list.stream().mapToInt(SectionOverview::girls).sum(),
+				list.stream().mapToInt(SectionOverview::total).sum())));
+		List<SectionOverview> all = byClass.values().stream().flatMap(List::stream).toList();
+		return new SchoolOverview(year.name(), on, isToday, fees, List.copyOf(classes.values()), all.size(),
+				all.stream().mapToInt(SectionOverview::boys).sum(), all.stream().mapToInt(SectionOverview::girls).sum(),
+				all.stream().mapToInt(SectionOverview::total).sum(), all.stream().mapToInt(SectionOverview::presentToday).sum(),
+				all.stream().mapToInt(SectionOverview::absentToday).sum(),
+				(int) all.stream().filter(SectionOverview::markedToday).count());
+	}
+
+	/** The students of one section today, for opening a section on the overview. */
+	@Transactional(readOnly = true)
+	public List<SectionStudent> sectionStudents(long sectionId) {
+		YearRef year = yearContext.requireSelected();
+		Period p = new Period(year, year.startDate(), year.endDate(), null, null);
+		structure.findSection(sectionId).orElseThrow(() -> ApiException.notFound("Section"));
+		Set<Long> allowed = allowedSections(p);
+		if (allowed != null && !allowed.contains(sectionId)) {
+			throw ApiException.notFound("Section");
+		}
+		LocalDate on = lastDay(p);
+		boolean isToday = on.equals(MoneyInput.today(clock));
+		boolean privateOk = CurrentActor.hasPermission(Permissions.STUDENTS_PRIVATE_VIEW);
+		boolean fees = feesAllowed();
+		Date day = Date.valueOf(on);
+		return jdbc.query("""
+				select st.id, st.gr_no, st.name, st.gender, f.father_name, f.father_phone,
+				       (select a.status from student_attendance a where a.student_id = st.id and a.att_date = ?),
+				       (select coalesce(sum(v.balance), 0) from fee_line_status v where v.student_id = st.id and v.balance > 0)
+				from enrolment e join student st on st.id = e.student_id join family f on f.id = st.family_id
+				where e.section_id = ? and e.academic_year_id = ? and e.effective_from <= ?
+				  and (e.effective_to is null or e.effective_to >= ?) and st.status = 'ACTIVE'
+				order by st.name""", (rs, i) -> new SectionStudent(rs.getLong(1), rs.getString(2), rs.getString(3),
+				rs.getString(4), rs.getString(5), privateOk ? rs.getString(6) : null,
+				isToday ? attendanceWord(rs.getString(7)) : null, fees ? MoneyInput.text(rs.getBigDecimal(8)) : null),
+				day, sectionId, year.id(), day, day);
+	}
+
+	private static String attendanceWord(String code) {
+		if (code == null) {
+			return "Not marked";
+		}
+		return switch (code) {
+			case "P" -> "Present";
+			case "L" -> "Late";
+			case "HD" -> "Half day";
+			case "A" -> "Absent";
+			case "LV" -> "Leave";
+			default -> code;
+		};
+	}
+
+	/** The overview as a file: every section with class subtotals and the school total. */
+	@Transactional(readOnly = true)
+	public ReportDoc classesOverviewDoc() {
+		SchoolOverview o = classesOverview();
+		List<Column> columns = new ArrayList<>(List.of(text("Class"), text("Section"), text("Class teacher"), number("Boys"),
+				number("Girls"), number("Total"), number("New this year"), number("Left this year")));
+		if (o.today()) {
+			columns.add(number("Present today"));
+			columns.add(number("Absent today"));
+		}
+		columns.add(percent("Attendance % (month)"));
+		if (o.fees()) {
+			columns.add(money("Fees outstanding"));
+			columns.add(number("Defaulters"));
+		}
+		List<List<String>> rows = new ArrayList<>();
+		for (ClassOverview c : o.classes()) {
+			for (SectionOverview s : c.sections()) {
+				List<Object> r = new ArrayList<>(List.of(s.className(), s.sectionName(), s.classTeacher() == null ? "" : s.classTeacher(),
+						s.boys(), s.girls(), s.total(), s.newThisYear(), s.leftThisYear()));
+				if (o.today()) {
+					r.add(s.markedToday() ? s.presentToday() : null);
+					r.add(s.markedToday() ? s.absentToday() : null);
+				}
+				r.add(s.monthAttendance());
+				if (o.fees()) {
+					r.add(s.feesOutstanding());
+					r.add(s.defaulters());
+				}
+				rows.add(row(r.toArray()));
+			}
+			if (c.sections().size() > 1) {
+				List<Object> r = new ArrayList<>(List.of(c.className() + " total", c.sections().size() + " sections", "",
+						c.boys(), c.girls(), c.total(), c.sections().stream().mapToInt(SectionOverview::newThisYear).sum(),
+						c.sections().stream().mapToInt(SectionOverview::leftThisYear).sum()));
+				if (o.today()) {
+					r.add(c.sections().stream().mapToInt(SectionOverview::presentToday).sum());
+					r.add(c.sections().stream().mapToInt(SectionOverview::absentToday).sum());
+				}
+				r.add(null);
+				if (o.fees()) {
+					r.add(MoneyInput.text(c.sections().stream().map(s -> new BigDecimal(s.feesOutstanding()))
+						.reduce(BigDecimal.ZERO, BigDecimal::add)));
+					r.add(c.sections().stream().mapToInt(SectionOverview::defaulters).sum());
+				}
+				rows.add(row(r.toArray()));
+			}
+		}
+		List<Object> total = new ArrayList<>(List.of("School total", count(o.sections(), "section"), "", o.boys(), o.girls(),
+				o.total(), o.classes().stream().flatMap(c -> c.sections().stream()).mapToInt(SectionOverview::newThisYear).sum(),
+				o.classes().stream().flatMap(c -> c.sections().stream()).mapToInt(SectionOverview::leftThisYear).sum()));
+		if (o.today()) {
+			total.add(o.presentToday());
+			total.add(o.absentToday());
+		}
+		total.add(null);
+		if (o.fees()) {
+			total.add(MoneyInput.text(o.classes().stream().flatMap(c -> c.sections().stream())
+				.map(s -> new BigDecimal(s.feesOutstanding())).reduce(BigDecimal.ZERO, BigDecimal::add)));
+			total.add(o.classes().stream().flatMap(c -> c.sections().stream()).mapToInt(SectionOverview::defaulters).sum());
+		}
+		rows.add(row(total.toArray()));
+		String note = (o.today() ? "Today's attendance: " + o.sectionsMarked() + " of " + o.sections()
+				+ " sections marked. " : "") + "Students on " + PdfKit.date(o.on()) + ".";
+		return new ReportDoc("CLASSES AND SECTIONS", List.of("Academic Year " + o.year()),
+				List.of(new Section("Classes and sections", note, columns, rows)));
 	}
 
 	// ---------------------------------------------------------------- teacher

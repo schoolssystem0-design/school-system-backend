@@ -350,6 +350,80 @@ class ReportsIT extends IntegrationTest {
 	}
 
 	@Test
+	void classesOverviewShowsEverySectionWithItsFigures() throws Exception {
+		// Today: Amna present, Bilal absent (5-A); 5-B not marked. Zara joins 5-A and leaves today.
+		attend(students.get(0), sec5a, today, "P");
+		attend(students.get(1), sec5a, today, "A");
+		long zara = admit("Zara", sec5a);
+		admin.post("/api/v1/students/" + zara + "/withdraw", "{\"leavingDate\":\"%s\",\"reason\":\"Moved city\"}".formatted(today))
+			.andExpect(status().isOk());
+
+		var r = admin.get("/api/v1/reports/classes-overview").andExpect(status().isOk())
+			.andExpect(jsonPath("$.today").value(true))
+			.andExpect(jsonPath("$.fees").value(true))
+			.andExpect(jsonPath("$.sections").value(2))
+			.andExpect(jsonPath("$.girls").value(3))
+			.andExpect(jsonPath("$.total").value(3))
+			.andExpect(jsonPath("$.presentToday").value(1))
+			.andExpect(jsonPath("$.absentToday").value(1))
+			.andExpect(jsonPath("$.sectionsMarked").value(1))
+			.andExpect(jsonPath("$.classes[0].className").value("Class 5"))
+			.andExpect(jsonPath("$.classes[0].total").value(3))
+			.andExpect(jsonPath("$.classes[0].sections[0].sectionName").value("A"))
+			.andExpect(jsonPath("$.classes[0].sections[0].classTeacher").value("Ms Rabia"))
+			.andExpect(jsonPath("$.classes[0].sections[0].girls").value(2))
+			.andExpect(jsonPath("$.classes[0].sections[0].boys").value(0))
+			.andExpect(jsonPath("$.classes[0].sections[0].newThisYear").value(2))
+			.andExpect(jsonPath("$.classes[0].sections[0].leftThisYear").value(1))
+			.andExpect(jsonPath("$.classes[0].sections[0].markedToday").value(true))
+			.andExpect(jsonPath("$.classes[0].sections[0].feesOutstanding").value("0.00"))
+			.andExpect(jsonPath("$.classes[0].sections[0].defaulters").value(0))
+			.andExpect(jsonPath("$.classes[0].sections[1].sectionName").value("B"))
+			.andExpect(jsonPath("$.classes[0].sections[1].markedToday").value(false))
+			.andExpect(jsonPath("$.classes[0].sections[1].total").value(1));
+		assertThat((String) ApiClient.json(r, "$.classes[0].sections[0].monthAttendance")).isNotNull();
+
+		// Opening 5-A lists its students with today's attendance
+		admin.get("/api/v1/reports/classes-overview/sections/" + sec5a + "/students").andExpect(status().isOk())
+			.andExpect(jsonPath("$.length()").value(2))
+			.andExpect(jsonPath("$[0].name").value("Amna"))
+			.andExpect(jsonPath("$[0].today").value("Present"))
+			.andExpect(jsonPath("$[1].name").value("Bilal"))
+			.andExpect(jsonPath("$[1].today").value("Absent"))
+			.andExpect(jsonPath("$[1].feesOutstanding").value("0.00"));
+
+		// As PDF and Excel, with class and school totals
+		byte[] pdf = admin.get("/api/v1/reports/classes-overview/file?format=pdf").andExpect(status().isOk())
+			.andReturn().getResponse().getContentAsByteArray();
+		assertThat(new String(pdf, 0, 5, java.nio.charset.StandardCharsets.ISO_8859_1)).isEqualTo("%PDF-");
+		String text = allText(admin.get("/api/v1/reports/classes-overview/file?format=xlsx").andExpect(status().isOk())
+			.andReturn().getResponse().getContentAsByteArray());
+		assertThat(text).contains("CLASSES AND SECTIONS", "Class 5 total", "School total", "Ms Rabia", "Present today",
+				"Fees outstanding", "1 of 2 sections marked");
+
+		// A teacher of 5-A: that section only, no fee figures; 5-B does not exist for them
+		long userId = TestData.userWithPermissions(school, "rabia", "rabia-password-1", Permissions.STUDENTS_VIEW, Permissions.FEES_VIEW);
+		TestDatabase.superuser().update("update app_user set staff_id = ?, data_scope = 'ASSIGNED_CLASSES' where id = ?", staffId, userId);
+		ApiClient teacher = new ApiClient(mvc);
+		teacher.login(school.code(), "rabia", "rabia-password-1").andExpect(status().isOk());
+		teacher.get("/api/v1/reports/classes-overview").andExpect(status().isOk())
+			.andExpect(jsonPath("$.fees").value(false))
+			.andExpect(jsonPath("$.sections").value(1))
+			.andExpect(jsonPath("$.classes[0].sections[0].sectionName").value("A"))
+			.andExpect(jsonPath("$.classes[0].sections[0].feesOutstanding").doesNotExist());
+		teacher.get("/api/v1/reports/classes-overview/sections/" + sec5b + "/students").andExpect(status().isNotFound());
+		teacher.get("/api/v1/reports/classes-overview/sections/" + sec5a + "/students")
+			.andExpect(jsonPath("$[0].feesOutstanding").doesNotExist())
+			.andExpect(jsonPath("$[0].fatherPhone").doesNotExist());
+
+		// Without student or report access: nothing
+		TestData.userWithPermissions(school, "nobody2", "nobody-password-2");
+		ApiClient nobody = new ApiClient(mvc);
+		nobody.login(school.code(), "nobody2", "nobody-password-2").andExpect(status().isOk());
+		nobody.get("/api/v1/reports/classes-overview").andExpect(status().isForbidden());
+	}
+
+	@Test
 	void anotherSchoolGetsNothing() throws Exception {
 		SeededSchool other = TestData.school("RPO");
 		TestData.admin(other, "admin", "admin-password-1");

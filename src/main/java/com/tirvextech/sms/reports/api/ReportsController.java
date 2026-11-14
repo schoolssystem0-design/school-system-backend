@@ -39,6 +39,10 @@ class ReportsController {
 	private static final String RECORDS = "hasAuthority('" + Permissions.STUDENTS_PRINT + "') or hasAuthority('"
 			+ Permissions.REPORTS_VIEW + "')";
 
+	/** The classes and sections overview: whoever may view students or reports. */
+	private static final String OVERVIEW = "hasAuthority('" + Permissions.STUDENTS_VIEW + "') or hasAuthority('"
+			+ Permissions.REPORTS_VIEW + "')";
+
 	private static final String STAFF ="hasAuthority('" + Permissions.REPORTS_STAFF_VIEW + "') and hasAuthority('SCOPE_ALL')";
 
 	private static final String SUPER_ADMIN = "hasAuthority('" + CurrentActor.SUPER_ADMIN_AUTHORITY + "')";
@@ -103,6 +107,26 @@ class ReportsController {
 	ResponseEntity<byte[]> teacherFile(@RequestParam long staffId, @RequestParam LocalDate from, @RequestParam LocalDate to,
 			@RequestParam String format) {
 		return file(files.render(reports.teacher(staffId, from, to), format), "teacher-report", format);
+	}
+
+	/** Every class with its sections: students (boys/girls), class teacher, today's attendance, month %, fees. */
+	@PreAuthorize(OVERVIEW)
+	@GetMapping("/api/v1/reports/classes-overview")
+	ReportService.SchoolOverview classesOverview() {
+		return reports.classesOverview();
+	}
+
+	/** The students of one section, when a section is opened on the overview. */
+	@PreAuthorize(OVERVIEW)
+	@GetMapping("/api/v1/reports/classes-overview/sections/{sectionId}/students")
+	List<ReportService.SectionStudent> sectionStudents(@org.springframework.web.bind.annotation.PathVariable long sectionId) {
+		return reports.sectionStudents(sectionId);
+	}
+
+	@PreAuthorize(OVERVIEW)
+	@GetMapping("/api/v1/reports/classes-overview/file")
+	ResponseEntity<byte[]> classesOverviewFile(@RequestParam String format) {
+		return file(files.render(reports.classesOverviewDoc(), format), "classes-and-sections", format);
 	}
 
 	/** One student's whole year as a file (details, family, classes, attendance, marks, results, fees). */
