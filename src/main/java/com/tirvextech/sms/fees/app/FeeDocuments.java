@@ -19,6 +19,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.openpdf.text.Chunk;
 import org.openpdf.text.Element;
 import org.openpdf.text.Font;
 import org.openpdf.text.PageSize;
@@ -35,13 +36,15 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class FeeDocuments {
 
-	private static final Font SMALL = new Font(Font.HELVETICA, 7.5f);
+	private static final Font SMALL = new Font(Font.HELVETICA, 8.5f);
 
-	private static final Font SMALL_BOLD = new Font(Font.HELVETICA, 7.5f, Font.BOLD);
+	private static final Font SMALL_BOLD = new Font(Font.HELVETICA, 8.5f, Font.BOLD);
 
-	private static final Font COPY = new Font(Font.HELVETICA, 7, Font.BOLD, new Color(90, 90, 90));
+	private static final Font SMALL_LABEL = new Font(Font.HELVETICA, 7.8f, Font.BOLD, new Color(70, 75, 88));
 
-	private static final Font NAME = new Font(Font.HELVETICA, 10, Font.BOLD, new Color(20, 40, 90));
+	private static final Font SMALL_MUTED = new Font(Font.HELVETICA, 7.8f, Font.NORMAL, new Color(100, 104, 115));
+
+	private static final Font WORDS = new Font(Font.HELVETICA, 8f, Font.ITALIC, new Color(60, 64, 75));
 
 	private final FeeQueries queries;
 
@@ -98,7 +101,7 @@ public class FeeDocuments {
 		throw ApiException.businessRule("BILLS_REQUIRED", "Choose the bills, a bill run or a section");
 	}
 
-	/** One A4 landscape page per bill with three copies: bank, school and parent. */
+	/** One page per bill with the copies side by side (bank, school, parent by default; see the setting). */
 	@Transactional(readOnly = true)
 	public byte[] vouchers(List<Long> billIds) {
 		if (billIds.isEmpty()) {
@@ -108,12 +111,15 @@ public class FeeDocuments {
 			throw ApiException.businessRule("TOO_MANY", "Print at most 2,000 vouchers at a time");
 		}
 		Letterhead lh = letterhead.current();
-		boolean showArrears = settings.bool(SettingKey.SHOW_ARREARS_ON_VOUCHER);
-		boolean showDiscount = settings.bool(SettingKey.SHOW_DISCOUNT_ON_VOUCHER);
-		boolean signature = settings.bool(SettingKey.SIGNATURE_ON_VOUCHER);
-		BigDecimal lateFee = settings.money(SettingKey.LATE_FEE_AMOUNT).amount();
-		String bank = settings.text(SettingKey.VOUCHER_BANK_DETAILS);
-		String note = settings.text(SettingKey.VOUCHER_NOTE);
+		VoucherStyle style = new VoucherStyle(settings.bool(SettingKey.SHOW_ARREARS_ON_VOUCHER),
+				settings.bool(SettingKey.SHOW_DISCOUNT_ON_VOUCHER), settings.bool(SettingKey.SIGNATURE_ON_VOUCHER),
+				settings.money(SettingKey.LATE_FEE_AMOUNT).amount(), settings.text(SettingKey.VOUCHER_BANK_DETAILS),
+				settings.text(SettingKey.VOUCHER_NOTE), settings.bool(SettingKey.VOUCHER_LOGO), lh.style().accent());
+		List<String> copies = switch (settings.text(SettingKey.VOUCHER_COPIES)) {
+			case "Parent only" -> List.of("PARENT COPY");
+			case "School and parent" -> List.of("SCHOOL COPY", "PARENT COPY");
+			default -> List.of("BANK COPY", "SCHOOL COPY", "PARENT COPY");
+		};
 		List<VoucherData> data = new ArrayList<>();
 		for (long id : billIds) {
 			BillView bill = queries.bill(id);
@@ -123,20 +129,29 @@ public class FeeDocuments {
 					BigDecimal.class, bill.studentId(), bill.id()));
 			data.add(new VoucherData(bill, arrears));
 		}
-		return PdfKit.render(PageSize.A4.rotate(), 18, doc -> {
+		boolean single = copies.size() == 1;
+		return PdfKit.render(single ? PageSize.A5 : PageSize.A4.rotate(), single ? 22 : 16, doc -> {
 			boolean first = true;
 			for (VoucherData v : data) {
 				if (!first) {
 					doc.newPage();
 				}
 				first = false;
-				PdfPTable page = new PdfPTable(3);
+				float[] widths = new float[copies.size() * 2 - 1];
+				for (int i = 0; i < widths.length; i++) {
+					widths[i] = i % 2 == 0 ? 1f : 0.045f;
+				}
+				PdfPTable page = new PdfPTable(widths);
 				page.setWidthPercentage(100);
-				for (String copy : List.of("BANK COPY", "SCHOOL COPY", "PARENT COPY")) {
+				for (int i = 0; i < copies.size(); i++) {
+					if (i > 0) {
+						page.addCell(cutLine());
+					}
 					PdfPCell cell = new PdfPCell();
-					cell.setPadding(6);
-					cell.setBorderColor(new Color(160, 160, 160));
-					voucherCopy(cell, copy, lh, v, showArrears, showDiscount, signature, lateFee, bank, note);
+					cell.setPadding(0);
+					cell.setBorderColor(PdfKit.tint(style.accent(), 0.5f));
+					cell.setBorderWidth(0.8f);
+					voucherCopy(cell, copies.get(i), lh, v, style);
 					page.addCell(cell);
 				}
 				PdfKit.add(doc, page);
@@ -147,119 +162,228 @@ public class FeeDocuments {
 	record VoucherData(BillView bill, BigDecimal arrears) {
 	}
 
-	private void voucherCopy(PdfPCell cell, String copy, Letterhead lh, VoucherData v, boolean showArrears,
-			boolean showDiscount, boolean signature, BigDecimal lateFee, String bank, String note) {
-		BillView b = v.bill();
-		Paragraph label = new Paragraph(copy, COPY);
-		label.setAlignment(Element.ALIGN_RIGHT);
-		cell.addElement(label);
-		Paragraph name = new Paragraph(PdfKit.nz(lh.schoolName()), NAME);
-		name.setAlignment(Element.ALIGN_CENTER);
-		cell.addElement(name);
-		if (lh.address() != null) {
-			Paragraph addr = new Paragraph(lh.address(), SMALL);
-			addr.setAlignment(Element.ALIGN_CENTER);
-			cell.addElement(addr);
-		}
-		if (bank != null && !bank.isBlank()) {
-			Paragraph bankLine = new Paragraph(bank, SMALL_BOLD);
-			bankLine.setAlignment(Element.ALIGN_CENTER);
-			bankLine.setSpacingAfter(4);
-			cell.addElement(bankLine);
-		}
-		PdfPTable info = new PdfPTable(new float[] { 1.3f, 2f });
-		info.setWidthPercentage(100);
-		row(info, "Voucher no.", b.billNo());
-		row(info, "Student", b.studentName());
-		row(info, "GR no.", b.grNo());
-		row(info, "Father", b.fatherName());
-		row(info, "Class", b.className() == null ? "" : b.className() + " - " + PdfKit.nz(b.sectionName()));
-		row(info, "Family no.", b.familyNo());
-		row(info, "Issued", PdfKit.date(b.issueDate()));
-		row(info, "Due date", PdfKit.date(b.dueDate()));
-		row(info, "Valid until", PdfKit.date(b.validityDate()));
-		cell.addElement(info);
-
-		PdfPTable lines = new PdfPTable(new float[] { 3f, 1.4f });
-		lines.setWidthPercentage(100);
-		lines.setSpacingBefore(4);
-		header(lines, "Fee", "Amount (Rs.)");
-		BigDecimal current = BigDecimal.ZERO;
-		for (BillLineView l : b.lines()) {
-			BigDecimal charged = new BigDecimal(l.net()).add(new BigDecimal(l.adjusted()));
-			if (showDiscount && new BigDecimal(l.discount()).signum() > 0) {
-				amountRow(lines, l.description(), new BigDecimal(l.gross()), false);
-				amountRow(lines, "   Less discount", new BigDecimal(l.discount()).negate(), false);
-			}
-			else {
-				amountRow(lines, l.description(), new BigDecimal(l.net()), false);
-			}
-			if (new BigDecimal(l.adjusted()).signum() != 0) {
-				amountRow(lines, "   Correction", new BigDecimal(l.adjusted()), false);
-			}
-			current = current.add(charged);
-		}
-		BigDecimal paid = new BigDecimal(b.paid());
-		if (paid.signum() > 0) {
-			amountRow(lines, "Already paid", paid.negate(), false);
-		}
-		BigDecimal thisBill = new BigDecimal(b.balance());
-		amountRow(lines, "This month", thisBill, true);
-		BigDecimal payable = thisBill.add(v.arrears());
-		if (showArrears && v.arrears().signum() > 0) {
-			amountRow(lines, "Arrears (earlier unpaid)", v.arrears(), false);
-		}
-		amountRow(lines, "Payable by due date", payable, true);
-		if (lateFee.signum() > 0) {
-			amountRow(lines, "Payable after due date", payable.add(lateFee), true);
-		}
-		cell.addElement(lines);
-		Paragraph words = new Paragraph(PdfKit.amountInWords(payable), SMALL);
-		words.setSpacingBefore(3);
-		cell.addElement(words);
-		if (note != null && !note.isBlank()) {
-			Paragraph n = new Paragraph(note, SMALL);
-			n.setSpacingBefore(3);
-			cell.addElement(n);
-		}
-		Paragraph sign = new Paragraph(signature ? "\n\n______________\nAccounts office" : "\n\n______________\nBank stamp",
-				SMALL);
-		sign.setAlignment(Element.ALIGN_RIGHT);
-		cell.addElement(sign);
+	record VoucherStyle(boolean showArrears, boolean showDiscount, boolean signature, BigDecimal lateFee, String bank,
+			String note, boolean logo, Color accent) {
 	}
 
-	private static void row(PdfPTable table, String label, String value) {
-		PdfPCell l = new PdfPCell(new Phrase(label, SMALL_BOLD));
-		l.setBorder(Rectangle.NO_BORDER);
-		l.setPadding(1);
-		PdfPCell v = new PdfPCell(new Phrase(PdfKit.nz(value), SMALL));
-		v.setBorder(Rectangle.NO_BORDER);
-		v.setPadding(1);
+	/** The gap between two copies: a dashed line to cut along. */
+	private static PdfPCell cutLine() {
+		PdfPCell gap = new PdfPCell();
+		gap.setBorder(Rectangle.NO_BORDER);
+		gap.setCellEvent((cell, position, canvases) -> {
+			var cb = canvases[PdfPTable.LINECANVAS];
+			cb.saveState();
+			cb.setLineDash(3, 3, 0);
+			cb.setLineWidth(0.5f);
+			cb.setColorStroke(new Color(150, 150, 150));
+			float x = (position.getLeft() + position.getRight()) / 2;
+			cb.moveTo(x, position.getBottom());
+			cb.lineTo(x, position.getTop());
+			cb.stroke();
+			cb.restoreState();
+		});
+		return gap;
+	}
+
+	private void voucherCopy(PdfPCell cell, String copy, Letterhead lh, VoucherData v, VoucherStyle s) {
+		BillView b = v.bill();
+		Color accent = s.accent();
+		Font white = new Font(Font.HELVETICA, 8.5f, Font.BOLD, Color.WHITE);
+
+		// Copy strip
+		PdfPTable strip = new PdfPTable(2);
+		strip.setWidthPercentage(100);
+		PdfPCell left = new PdfPCell(new Phrase(copy, white));
+		PdfPCell right = new PdfPCell(new Phrase("No. " + PdfKit.nz(b.billNo()), white));
+		right.setHorizontalAlignment(Element.ALIGN_RIGHT);
+		for (PdfPCell c : List.of(left, right)) {
+			c.setBorder(Rectangle.NO_BORDER);
+			c.setBackgroundColor(accent);
+			c.setPadding(4);
+			strip.addCell(c);
+		}
+		cell.addElement(strip);
+
+		// School heading
+		boolean logo = s.logo() && lh.logo() != null && lh.logo().length > 0;
+		PdfPTable heading = new PdfPTable(logo ? new float[] { 1f, 4.2f } : new float[] { 1f });
+		heading.setWidthPercentage(94);
+		heading.setSpacingBefore(5);
+		if (logo) {
+			heading.addCell(PdfKit.imageCell(lh.logo(), 34));
+		}
+		PdfPCell names = new PdfPCell();
+		names.setBorder(Rectangle.NO_BORDER);
+		names.setVerticalAlignment(Element.ALIGN_MIDDLE);
+		Paragraph name = new Paragraph(PdfKit.nz(lh.schoolName()), new Font(Font.HELVETICA, 12, Font.BOLD, accent));
+		name.setAlignment(logo ? Element.ALIGN_LEFT : Element.ALIGN_CENTER);
+		names.addElement(name);
+		if (lh.address() != null) {
+			Paragraph addr = new Paragraph(lh.address(), SMALL_MUTED);
+			addr.setAlignment(logo ? Element.ALIGN_LEFT : Element.ALIGN_CENTER);
+			names.addElement(addr);
+		}
+		heading.addCell(names);
+		cell.addElement(heading);
+
+		PdfPTable body = new PdfPTable(1);
+		body.setWidthPercentage(94);
+		body.setSpacingBefore(4);
+		if (s.bank() != null && !s.bank().isBlank()) {
+			PdfPCell bank = new PdfPCell(new Phrase(s.bank(), SMALL_BOLD));
+			bank.setHorizontalAlignment(Element.ALIGN_CENTER);
+			bank.setBackgroundColor(PdfKit.tint(accent, 0.08f));
+			bank.setBorderColor(PdfKit.tint(accent, 0.3f));
+			bank.setPadding(4);
+			body.addCell(bank);
+		}
+		if (b.title() != null && !b.title().isBlank()) {
+			PdfPCell title = new PdfPCell(new Phrase(b.title(), new Font(Font.HELVETICA, 9.5f, Font.BOLD, accent)));
+			title.setBorder(Rectangle.NO_BORDER);
+			title.setHorizontalAlignment(Element.ALIGN_CENTER);
+			title.setPaddingTop(4);
+			title.setPaddingBottom(2);
+			body.addCell(title);
+		}
+		body.addCell(wrap(infoGrid(b, accent)));
+		body.addCell(wrap(feeLines(b, v.arrears(), s)));
+
+		BigDecimal payable = new BigDecimal(b.balance()).add(v.arrears());
+		PdfPCell words = new PdfPCell(new Phrase(PdfKit.amountInWords(payable), WORDS));
+		words.setBorder(Rectangle.NO_BORDER);
+		words.setPaddingTop(3);
+		body.addCell(words);
+		if (s.note() != null && !s.note().isBlank()) {
+			PdfPCell n = new PdfPCell(new Phrase(s.note(), SMALL_MUTED));
+			n.setBorder(Rectangle.NO_BORDER);
+			n.setPaddingTop(2);
+			body.addCell(n);
+		}
+
+		PdfPTable signs = new PdfPTable(2);
+		signs.setWidthPercentage(100);
+		for (String who : List.of("Depositor", s.signature() ? "Accounts office" : "Bank stamp & signature")) {
+			PdfPCell c = new PdfPCell();
+			c.setBorder(Rectangle.NO_BORDER);
+			c.setPaddingTop(34);
+			c.addElement(new Paragraph(new Chunk(new org.openpdf.text.pdf.draw.LineSeparator(0.6f, 88f, PdfKit.MUTED,
+					Element.ALIGN_CENTER, -2))));
+			Paragraph p = new Paragraph(who, SMALL_MUTED);
+			p.setAlignment(Element.ALIGN_CENTER);
+			c.addElement(p);
+			signs.addCell(c);
+		}
+		body.addCell(wrap(signs));
+		cell.addElement(body);
+		cell.addElement(new Paragraph(" ", new Font(Font.HELVETICA, 3)));
+	}
+
+	private static PdfPCell wrap(PdfPTable table) {
+		PdfPCell c = new PdfPCell(table);
+		c.setBorder(Rectangle.NO_BORDER);
+		c.setPadding(0);
+		c.setPaddingTop(3);
+		return c;
+	}
+
+	private static PdfPTable infoGrid(BillView b, Color accent) {
+		PdfPTable info = new PdfPTable(new float[] { 1.05f, 1.9f, 0.95f, 1.3f });
+		info.setWidthPercentage(100);
+		Color bg = PdfKit.tint(accent, 0.07f);
+		info(info, bg, "Student", b.studentName(), 3);
+		info(info, bg, "Father", b.fatherName(), 3);
+		info(info, bg, "GR no.", b.grNo(), 1);
+		info(info, bg, "Family", b.familyNo(), 1);
+		info(info, bg, "Class", b.className() == null ? "" : b.className() + " - " + PdfKit.nz(b.sectionName()), 3);
+		info(info, bg, "Issued", PdfKit.date(b.issueDate()), 1);
+		info(info, bg, "Due date", PdfKit.date(b.dueDate()), 1);
+		info(info, bg, "Valid until", PdfKit.date(b.validityDate()), 3);
+		return info;
+	}
+
+	private static void info(PdfPTable table, Color bg, String label, String value, int span) {
+		PdfPCell l = new PdfPCell(new Phrase(label, SMALL_LABEL));
+		l.setBackgroundColor(bg);
+		l.setBorderColor(PdfKit.BORDER);
+		l.setPadding(3.5f);
+		PdfPCell v = new PdfPCell(new Phrase(PdfKit.nz(value), "Due date".equals(label) ? SMALL_BOLD : SMALL));
+		v.setBorderColor(PdfKit.BORDER);
+		v.setPadding(3.5f);
+		v.setColspan(span);
 		table.addCell(l);
 		table.addCell(v);
 	}
 
-	private static void header(PdfPTable table, String left, String right) {
-		for (String text : List.of(left, right)) {
-			PdfPCell c = new PdfPCell(new Phrase(text, SMALL_BOLD));
-			c.setBackgroundColor(new Color(235, 237, 240));
-			c.setPadding(2);
-			if (text.equals(right)) {
+	private static PdfPTable feeLines(BillView b, BigDecimal arrears, VoucherStyle s) {
+		Color accent = s.accent();
+		PdfPTable lines = new PdfPTable(new float[] { 3f, 1.4f });
+		lines.setWidthPercentage(100);
+		Font head = new Font(Font.HELVETICA, 8.5f, Font.BOLD, Color.WHITE);
+		for (String text : List.of("Fee", "Amount (Rs.)")) {
+			PdfPCell c = new PdfPCell(new Phrase(text, head));
+			c.setBackgroundColor(accent);
+			c.setBorderColor(accent);
+			c.setPadding(3);
+			if (!"Fee".equals(text)) {
 				c.setHorizontalAlignment(Element.ALIGN_RIGHT);
+			}
+			lines.addCell(c);
+		}
+		for (BillLineView l : b.lines()) {
+			if (s.showDiscount() && new BigDecimal(l.discount()).signum() > 0) {
+				amountRow(lines, l.description(), new BigDecimal(l.gross()), Row.PLAIN, accent);
+				amountRow(lines, "   Less discount", new BigDecimal(l.discount()).negate(), Row.PLAIN, accent);
+			}
+			else {
+				amountRow(lines, l.description(), new BigDecimal(l.net()), Row.PLAIN, accent);
+			}
+			if (new BigDecimal(l.adjusted()).signum() != 0) {
+				amountRow(lines, "   Correction", new BigDecimal(l.adjusted()), Row.PLAIN, accent);
+			}
+		}
+		BigDecimal paid = new BigDecimal(b.paid());
+		if (paid.signum() > 0) {
+			amountRow(lines, "Already paid", paid.negate(), Row.PLAIN, accent);
+		}
+		BigDecimal thisBill = new BigDecimal(b.balance());
+		amountRow(lines, "This bill", thisBill, Row.SUBTOTAL, accent);
+		if (s.showArrears() && arrears.signum() > 0) {
+			amountRow(lines, "Arrears (earlier unpaid)", arrears, Row.PLAIN, accent);
+		}
+		BigDecimal payable = thisBill.add(arrears);
+		amountRow(lines, "Payable by due date", payable, Row.TOTAL, accent);
+		if (s.lateFee().signum() > 0) {
+			amountRow(lines, "Payable after due date", payable.add(s.lateFee()), Row.SUBTOTAL, accent);
+		}
+		return lines;
+	}
+
+	private enum Row {
+		PLAIN, SUBTOTAL, TOTAL
+	}
+
+	private static void amountRow(PdfPTable table, String label, BigDecimal amount, Row kind, Color accent) {
+		Font font = switch (kind) {
+			case TOTAL -> new Font(Font.HELVETICA, 10, Font.BOLD, Color.WHITE);
+			case SUBTOTAL -> SMALL_BOLD;
+			case PLAIN -> SMALL;
+		};
+		Color bg = switch (kind) {
+			case TOTAL -> accent;
+			case SUBTOTAL -> PdfKit.tint(accent, 0.1f);
+			case PLAIN -> null;
+		};
+		PdfPCell l = new PdfPCell(new Phrase(label, font));
+		PdfPCell r = new PdfPCell(new Phrase(new java.text.DecimalFormat("#,##0.00").format(amount), font));
+		r.setHorizontalAlignment(Element.ALIGN_RIGHT);
+		for (PdfPCell c : List.of(l, r)) {
+			c.setPadding(kind == Row.TOTAL ? 5 : 3.5f);
+			c.setBorderColor(kind == Row.TOTAL ? accent : PdfKit.BORDER);
+			if (bg != null) {
+				c.setBackgroundColor(bg);
 			}
 			table.addCell(c);
 		}
-	}
-
-	private static void amountRow(PdfPTable table, String label, BigDecimal amount, boolean bold) {
-		PdfPCell l = new PdfPCell(new Phrase(label, bold ? SMALL_BOLD : SMALL));
-		l.setPadding(2);
-		PdfPCell r = new PdfPCell(new Phrase(new java.text.DecimalFormat("#,##0.00").format(amount),
-				bold ? SMALL_BOLD : SMALL));
-		r.setPadding(2);
-		r.setHorizontalAlignment(Element.ALIGN_RIGHT);
-		table.addCell(l);
-		table.addCell(r);
 	}
 
 	// ---------------------------------------------------------------- receipt
@@ -291,7 +415,7 @@ public class FeeDocuments {
 			table.setWidthPercentage(100);
 			for (String h : List.of("Student", "GR no.", "Fee", "Amount (Rs.)")) {
 				PdfPCell c = new PdfPCell(new Phrase(h, PdfKit.BODY_BOLD));
-				c.setBackgroundColor(new Color(243, 244, 246));
+				c.setBackgroundColor(PdfKit.tint(PdfKit.accent(), 0.1f));
 				c.setPadding(4);
 				table.addCell(c);
 			}
@@ -361,7 +485,7 @@ public class FeeDocuments {
 			table.setWidthPercentage(100);
 			for (String h : List.of("Student", "Fee", "Due date", "Amount (Rs.)")) {
 				PdfPCell c = new PdfPCell(new Phrase(h, PdfKit.BODY_BOLD));
-				c.setBackgroundColor(new Color(243, 244, 246));
+				c.setBackgroundColor(PdfKit.tint(PdfKit.accent(), 0.1f));
 				c.setPadding(4);
 				table.addCell(c);
 			}

@@ -214,7 +214,7 @@ public class StudentPrintService {
 				card.setWidthPercentage(100);
 				PdfPCell header = new PdfPCell(new Phrase(PdfKit.nz(lh.schoolName()), school));
 				header.setColspan(2);
-				header.setBackgroundColor(new Color(20, 40, 90));
+				header.setBackgroundColor(PdfKit.accent());
 				header.setHorizontalAlignment(Element.ALIGN_CENTER);
 				header.setPadding(4);
 				card.addCell(header);

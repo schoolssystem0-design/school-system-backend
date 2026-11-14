@@ -79,10 +79,10 @@ class RolloverIT extends IntegrationTest {
 		}
 		var permissions = db.queryForList("select permission from role_permission where role_id = ?", String.class, roleId);
 		assertThat(permissions).contains("admissions.manage", "students.view").doesNotContain("academics.view");
-		// Phase 3: accounts staff get the fee permissions, but not approvals or reversals
+		// Phase 3: accounts staff get the fee permissions, including reversals and adjustment approvals
 		assertThat(db.queryForList("select permission from role_permission where role_id = ?", String.class, accountant))
 			.contains("fees.view", "fees.payment.add", "fees.bill.generate")
-			.doesNotContain("fees.payment.reverse", "fees.adjust.approve", "academics.view");
+			.contains("fees.payment.reverse", "fees.adjust.approve");
 		assertThat(db.queryForObject("select template_version from role where id = ?", Integer.class, roleId))
 			.isEqualTo(com.tirvextech.sms.shared.security.Permissions.CATALOGUE_VERSION);
 		ApplicationArguments unused = null;

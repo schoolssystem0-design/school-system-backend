@@ -63,7 +63,11 @@ class ReportsController {
 
 	private final CrossSchoolReports crossSchool;
 
-	ReportsController(ReportService reports, ReportFiles files, CrossSchoolReports crossSchool) {
+	private final com.tirvextech.sms.reports.app.Benchmarks benchmarks;
+
+	ReportsController(ReportService reports, ReportFiles files, CrossSchoolReports crossSchool,
+			com.tirvextech.sms.reports.app.Benchmarks benchmarks) {
+		this.benchmarks = benchmarks;
 		this.reports = reports;
 		this.files = files;
 		this.crossSchool = crossSchool;
@@ -107,6 +111,17 @@ class ReportsController {
 	ResponseEntity<byte[]> teacherFile(@RequestParam long staffId, @RequestParam LocalDate from, @RequestParam LocalDate to,
 			@RequestParam String format) {
 		return file(files.render(reports.teacher(staffId, from, to), format), "teacher-report", format);
+	}
+
+	/** How this school compares with similar schools (averages only; at least 5 schools; schools can opt out). */
+	@PreAuthorize(VIEW + " and hasAuthority('SCOPE_ALL')")
+	@GetMapping("/api/v1/reports/benchmark")
+	com.tirvextech.sms.reports.app.Benchmarks.Benchmark benchmark() {
+		Long school = CurrentActor.require().tenantSchoolId();
+		if (school == null) {
+			throw com.tirvextech.sms.shared.web.ApiException.notFound("School");
+		}
+		return benchmarks.compare(school);
 	}
 
 	/** Every class with its sections: students (boys/girls), class teacher, today's attendance, month %, fees. */

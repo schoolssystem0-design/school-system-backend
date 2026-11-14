@@ -1,9 +1,12 @@
 package com.tirvextech.sms.school.app;
 
 import com.tirvextech.sms.school.infra.SchoolProfileStore;
+import com.tirvextech.sms.settings.SettingKey;
+import com.tirvextech.sms.settings.SettingsService;
 import com.tirvextech.sms.shared.files.FileService;
 import com.tirvextech.sms.shared.pdf.Letterhead;
 import com.tirvextech.sms.shared.pdf.LetterheadSource;
+import com.tirvextech.sms.shared.pdf.PdfKit;
 import com.tirvextech.sms.shared.web.ApiException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,9 +19,12 @@ class SchoolLetterhead implements LetterheadSource {
 
 	private final FileService files;
 
-	SchoolLetterhead(SchoolProfileStore profiles, FileService files) {
+	private final SettingsService settings;
+
+	SchoolLetterhead(SchoolProfileStore profiles, FileService files, SettingsService settings) {
 		this.profiles = profiles;
 		this.files = files;
+		this.settings = settings;
 	}
 
 	@Override
@@ -32,6 +38,8 @@ class SchoolLetterhead implements LetterheadSource {
 			.map(s -> new Letterhead.SignatureImage(s.role(), s.name(), s.title(), files.content(s.fileId()).orElse(null)))
 			.toList();
 		return new Letterhead(p.name(), p.campusName(), p.address(), phones, p.email(), p.headName(), p.headTitle(),
-				files.content(p.logoFileId()).orElse(null), files.content(p.stampFileId()).orElse(null), signatures);
+				files.content(p.logoFileId()).orElse(null), files.content(p.stampFileId()).orElse(null), signatures,
+				new Letterhead.DocStyle(PdfKit.colour(settings.text(SettingKey.DOCUMENT_THEME)),
+						settings.text(SettingKey.DOCUMENT_FOOTER), settings.bool(SettingKey.DOCUMENT_WATERMARK)));
 	}
 }

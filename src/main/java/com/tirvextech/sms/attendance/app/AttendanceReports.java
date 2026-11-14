@@ -342,7 +342,7 @@ public class AttendanceReports implements StudentAbsences, com.tirvextech.sms.sh
 				cell(t, String.valueOf(d), TINY_BOLD, working.contains(month.atDay(d)) ? null : new Color(225, 225, 225));
 			}
 			for (String h : List.of("P", "L", "HD", "A", "LV", "%")) {
-				cell(t, h, TINY_BOLD, new Color(243, 244, 246));
+				cell(t, h, TINY_BOLD, PdfKit.tint(PdfKit.accent(), 0.1f));
 			}
 			for (Row r : students) {
 				cell(t, r.grNo(), TINY, null);

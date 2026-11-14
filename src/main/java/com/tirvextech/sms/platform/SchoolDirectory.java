@@ -14,8 +14,11 @@ public class SchoolDirectory implements SchoolLookup {
 
 	private final SchoolRepository schools;
 
-	SchoolDirectory(SchoolRepository schools) {
+	private final com.tirvextech.sms.platform.app.SubscriptionService billing;
+
+	SchoolDirectory(SchoolRepository schools, com.tirvextech.sms.platform.app.SubscriptionService billing) {
 		this.schools = schools;
+		this.billing = billing;
 	}
 
 	@Override
@@ -24,17 +27,17 @@ public class SchoolDirectory implements SchoolLookup {
 		if (code == null || code.isBlank()) {
 			return Optional.empty();
 		}
-		return schools.findByCode(code.trim().toUpperCase(Locale.ROOT)).map(SchoolDirectory::ref);
+		return schools.findByCode(code.trim().toUpperCase(Locale.ROOT)).map(this::ref);
 	}
 
 	@Override
 	@Transactional(readOnly = true)
 	public Optional<SchoolRef> findById(long id) {
-		return schools.findById(id).map(SchoolDirectory::ref);
+		return schools.findById(id).map(this::ref);
 	}
 
-	private static SchoolRef ref(School school) {
+	private SchoolRef ref(School school) {
 		return new SchoolRef(school.getId(), school.getCode(), school.getName(),
-				school.getStatus() == School.Status.ACTIVE, school.getTrialEndsAt());
+				school.getStatus() == School.Status.ACTIVE, school.getTrialEndsAt(), billing.paused(school.getId()));
 	}
 }

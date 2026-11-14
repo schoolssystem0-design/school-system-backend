@@ -21,6 +21,9 @@ public enum SettingKey {
 	MASK_DASHBOARD_FIGURES(Group.GENERAL, "Mask dashboard figures",
 			"Hide sensitive totals on the dashboard when the screen may be seen by visitors", Type.BOOLEAN, false,
 			null),
+	BENCHMARK_SHARE(Group.GENERAL, "Compare with similar schools",
+			"Share this school's averages (never names or details) with similar schools and see how you compare",
+			Type.BOOLEAN, true, null),
 
 	// --- Attendance (FR 13)
 	STUDENT_LATE_TIME_1(Group.ATTENDANCE, "Student late time (slot 1)",
@@ -57,6 +60,36 @@ public enum SettingKey {
 			"Bank name, branch and account number printed on fee vouchers", Type.TEXT, "", null),
 	VOUCHER_NOTE(Group.FEES, "Note on vouchers", "Short note printed at the bottom of every fee voucher", Type.TEXT, "",
 			null),
+	VOUCHER_COPIES(Group.FEES, "Voucher copies", "Copies printed side by side on each fee voucher page", Type.ENUM,
+			"Bank, school and parent", List.of("Bank, school and parent", "School and parent", "Parent only")),
+	VOUCHER_LOGO(Group.FEES, "Logo on vouchers", "Print the school logo at the top of each voucher copy", Type.BOOLEAN,
+			true, null),
+
+	// --- Printed documents: the look of every PDF
+	DOCUMENT_THEME(Group.DOCUMENTS, "Document colour",
+			"Colour of the school name, titles, headings and lines on every printed document", Type.ENUM, "Navy blue",
+			List.of("Navy blue", "Royal blue", "Green", "Maroon", "Teal", "Purple", "Black")),
+	DOCUMENT_FOOTER(Group.DOCUMENTS, "Footer line",
+			"Printed at the bottom of every page, e.g. the school motto or website (blank: the school name)", Type.TEXT,
+			"", null),
+	DOCUMENT_WATERMARK(Group.DOCUMENTS, "Logo watermark", "Print the school logo faintly behind every page",
+			Type.BOOLEAN, false, null),
+
+	// --- Admission form (FR 4.11): which parts the printed form has
+	ADMISSION_FORM_PHOTO(Group.ADMISSION_FORM, "Photo box", "A box for the child's photograph at the top of the form",
+			Type.BOOLEAN, true, null),
+	ADMISSION_FORM_MOTHER(Group.ADMISSION_FORM, "Mother's details", "Mother's name, CNIC, profession and mobile",
+			Type.BOOLEAN, true, null),
+	ADMISSION_FORM_EMERGENCY(Group.ADMISSION_FORM, "Emergency contact",
+			"Someone other than the parents to call in an emergency", Type.BOOLEAN, true, null),
+	ADMISSION_FORM_MEDICAL(Group.ADMISSION_FORM, "Medical information", "Blood group, allergies and conditions",
+			Type.BOOLEAN, true, null),
+	ADMISSION_FORM_DOCUMENTS(Group.ADMISSION_FORM, "Documents to attach",
+			"Tick-box list on the form, separated by commas (blank: no list)", Type.TEXT,
+			"B-Form copy, Father's CNIC copy, Mother's CNIC copy, 4 passport-size photographs, School leaving certificate, Last result card",
+			null),
+	ADMISSION_FORM_OFFICE_USE(Group.ADMISSION_FORM, "Office use section",
+			"A section for the office: GR no., class given, fee received, approval", Type.BOOLEAN, true, null),
 
 	// --- Discounts (FR 10.3)
 	MAX_DISCOUNT_WITHOUT_APPROVAL(Group.DISCOUNTS, "Maximum discount without approval (%)",
@@ -143,7 +176,7 @@ public enum SettingKey {
 		GENERAL("General preferences"), ATTENDANCE("Attendance"), FEES("Fees"), DISCOUNTS("Discounts"),
 		RECEIPTS("Receipts"), REPORT_CARDS("Report cards"), RESULTS("Results"), SIGNATURES("Signatures"),
 		CERTIFICATES("Certificates"), WARNINGS("Warning letters"), MESSAGES("Messages"), SALARY("Salary"),
-		ACCOUNTS("School accounts");
+		ACCOUNTS("School accounts"), DOCUMENTS("Printed documents"), ADMISSION_FORM("Admission form");
 
 		public final String label;
 

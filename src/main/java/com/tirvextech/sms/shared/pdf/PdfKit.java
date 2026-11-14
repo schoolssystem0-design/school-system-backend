@@ -4,8 +4,10 @@ import java.awt.Color;
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.function.Consumer;
 import org.openpdf.text.Chunk;
 import org.openpdf.text.Document;
@@ -16,13 +18,18 @@ import org.openpdf.text.PageSize;
 import org.openpdf.text.Paragraph;
 import org.openpdf.text.Phrase;
 import org.openpdf.text.Rectangle;
+import org.openpdf.text.pdf.ColumnText;
+import org.openpdf.text.pdf.PdfContentByte;
+import org.openpdf.text.pdf.PdfGState;
 import org.openpdf.text.pdf.PdfPCell;
 import org.openpdf.text.pdf.PdfPTable;
+import org.openpdf.text.pdf.PdfPageEventHelper;
 import org.openpdf.text.pdf.PdfWriter;
 
 /**
- * Small toolkit for the school's printed documents: A4 pages with the letterhead, titles, text, label/value tables
- * and signature rows. English only (DECISIONS D-18), standard PDF fonts.
+ * Small toolkit for the school's printed documents: A4 pages with the letterhead, titles, text, label/value tables,
+ * form fields and signature rows. English only (DECISIONS D-18), standard PDF fonts. Documents take the school's theme
+ * colour, footer line and watermark from {@link Letterhead#style()}.
  */
 public final class PdfKit {
 
@@ -30,17 +37,75 @@ public final class PdfKit {
 
 	public static final Font HEADING = new Font(Font.HELVETICA, 12, Font.BOLD);
 
-	public static final Font BODY = new Font(Font.HELVETICA, 11);
+	public static final Font BODY = new Font(Font.HELVETICA, 10.5f, Font.NORMAL, new Color(30, 32, 40));
 
-	public static final Font BODY_BOLD = new Font(Font.HELVETICA, 11, Font.BOLD);
+	public static final Font BODY_BOLD = new Font(Font.HELVETICA, 10.5f, Font.BOLD, new Color(30, 32, 40));
 
-	public static final Font SMALL = new Font(Font.HELVETICA, 8, Font.NORMAL, new Color(80, 80, 80));
+	public static final Font SMALL = new Font(Font.HELVETICA, 8, Font.NORMAL, new Color(90, 94, 105));
 
 	public static final Font SCHOOL_NAME = new Font(Font.HELVETICA, 18, Font.BOLD, new Color(20, 40, 90));
 
+	/** Label text on forms and detail tables. */
+	public static final Font LABEL = new Font(Font.HELVETICA, 9, Font.BOLD, new Color(70, 75, 88));
+
+	/** Light grey for table borders. */
+	public static final Color BORDER = new Color(212, 216, 224);
+
+	public static final Color MUTED = new Color(110, 115, 128);
+
+	/** The theme colours a school can choose for its documents (the setting's options, in this order). */
+	public static final Map<String, Color> THEMES = themes();
+
+	private static Map<String, Color> themes() {
+		Map<String, Color> m = new LinkedHashMap<>();
+		m.put("Navy blue", new Color(27, 50, 100));
+		m.put("Royal blue", new Color(29, 78, 216));
+		m.put("Green", new Color(21, 115, 61));
+		m.put("Maroon", new Color(128, 28, 40));
+		m.put("Teal", new Color(15, 110, 110));
+		m.put("Purple", new Color(91, 33, 182));
+		m.put("Black", new Color(33, 35, 46));
+		return java.util.Collections.unmodifiableMap(m);
+	}
+
 	private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd-MM-yyyy", Locale.ENGLISH);
 
+	/** The document being rendered on this thread: its writer and, once the letterhead is printed, its style. */
+	private static final ThreadLocal<Page> CURRENT = new ThreadLocal<>();
+
+	private static final class Page {
+
+		final PdfWriter writer;
+
+		Letterhead letterhead;
+
+		Page(PdfWriter writer) {
+			this.writer = writer;
+		}
+	}
+
 	private PdfKit() {
+	}
+
+	/** A theme colour by name ("Navy blue" when unknown). */
+	public static Color colour(String name) {
+		Color c = THEMES.get(name == null ? "" : name);
+		return c != null ? c : new Color(27, 50, 100);
+	}
+
+	/** {@code colour} mixed with white: 0 = white, 1 = the colour. */
+	public static Color tint(Color colour, float amount) {
+		return new Color(mix(colour.getRed(), amount), mix(colour.getGreen(), amount), mix(colour.getBlue(), amount));
+	}
+
+	private static int mix(int c, float amount) {
+		return Math.round(255 - (255 - c) * amount);
+	}
+
+	/** The theme colour of the document being rendered (the default before the letterhead is printed). */
+	public static Color accent() {
+		Page page = CURRENT.get();
+		return page == null || page.letterhead == null ? colour(null) : page.letterhead.style().accent();
 	}
 
 	/** Renders an A4 document and returns the PDF bytes. */
@@ -50,63 +115,154 @@ public final class PdfKit {
 
 	public static byte[] render(Rectangle size, float margin, Consumer<Document> content) {
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		Document document = new Document(size, margin, margin, margin, margin);
-		PdfWriter.getInstance(document, out);
-		document.open();
-		content.accept(document);
-		document.close();
+		Document document = new Document(size, margin, margin, margin, margin + 6);
+		PdfWriter writer = PdfWriter.getInstance(document, out);
+		Page previous = CURRENT.get();
+		CURRENT.set(new Page(writer));
+		try {
+			document.open();
+			content.accept(document);
+			document.close();
+		}
+		finally {
+			if (previous == null) {
+				CURRENT.remove();
+			}
+			else {
+				CURRENT.set(previous);
+			}
+		}
 		return out.toByteArray();
 	}
 
-	/** Logo at the left, school name, campus, address and contacts centred, then a rule. */
+	/**
+	 * Logo at the left, the school name in the theme colour, campus, address and contacts centred, then a double rule.
+	 * Also turns on the page footer (footer line, page numbers) and the watermark for the rest of the document.
+	 */
 	public static void letterhead(Document doc, Letterhead lh) {
-		PdfPTable table = new PdfPTable(new float[] { 1.2f, 6f, 1.2f });
+		Page page = CURRENT.get();
+		if (page != null && page.letterhead == null) {
+			page.letterhead = lh;
+			page.writer.setPageEvent(new Decorations(lh));
+		}
+		Color accent = lh.style().accent();
+		boolean logo = image(lh.logo()) != null;
+		PdfPTable table = new PdfPTable(logo ? new float[] { 1.25f, 6f, 1.25f } : new float[] { 1f });
 		table.setWidthPercentage(100);
-		table.addCell(imageCell(lh.logo(), 60));
+		if (logo) {
+			table.addCell(imageCell(lh.logo(), 64));
+		}
 		PdfPCell text = new PdfPCell();
 		text.setBorder(Rectangle.NO_BORDER);
 		text.setHorizontalAlignment(Element.ALIGN_CENTER);
-		Paragraph name = new Paragraph(nz(lh.schoolName()), SCHOOL_NAME);
+		text.setVerticalAlignment(Element.ALIGN_MIDDLE);
+		Paragraph name = new Paragraph(nz(lh.schoolName()), new Font(Font.HELVETICA, 19, Font.BOLD, accent));
 		name.setAlignment(Element.ALIGN_CENTER);
 		text.addElement(name);
-		addCentred(text, lh.campusName(), BODY);
+		addCentred(text, lh.campusName(), new Font(Font.HELVETICA, 10.5f, Font.BOLD, new Color(60, 64, 75)));
 		addCentred(text, lh.address(), SMALL);
-		String contacts = join(" | ", lh.phones() == null ? null : "Phone: " + lh.phones(),
+		String contacts = join("   |   ", lh.phones() == null ? null : "Phone: " + lh.phones(),
 				lh.email() == null ? null : "Email: " + lh.email());
 		addCentred(text, contacts, SMALL);
 		table.addCell(text);
-		table.addCell(empty());
+		if (logo) {
+			table.addCell(empty());
+		}
 		add(doc, table);
-		Paragraph rule = new Paragraph(new Chunk(new org.openpdf.text.pdf.draw.LineSeparator(1f, 100f, Color.GRAY,
-				Element.ALIGN_CENTER, -2)));
-		rule.setSpacingAfter(12);
-		add(doc, rule);
+		rule(doc, accent, 2.2f, 4, 1.5f);
+		rule(doc, tint(accent, 0.35f), 0.7f, 0, 12);
 	}
 
+	private static void rule(Document doc, Color colour, float height, float before, float after) {
+		PdfPTable t = new PdfPTable(1);
+		t.setWidthPercentage(100);
+		PdfPCell c = new PdfPCell();
+		c.setBorder(Rectangle.NO_BORDER);
+		c.setBackgroundColor(colour);
+		c.setFixedHeight(height);
+		t.addCell(c);
+		t.setSpacingBefore(before);
+		t.setSpacingAfter(after);
+		add(doc, t);
+	}
+
+	/** The document title on a tinted band with a bar in the theme colour. */
 	public static void title(Document doc, String text) {
-		Paragraph p = new Paragraph(text, TITLE);
-		p.setAlignment(Element.ALIGN_CENTER);
-		p.setSpacingBefore(6);
-		p.setSpacingAfter(14);
-		add(doc, p);
+		Color accent = accent();
+		PdfPTable band = new PdfPTable(new float[] { 0.8f, 99.2f });
+		band.setWidthPercentage(100);
+		PdfPCell bar = new PdfPCell();
+		bar.setBorder(Rectangle.NO_BORDER);
+		bar.setBackgroundColor(accent);
+		band.addCell(bar);
+		PdfPCell cell = new PdfPCell(new Phrase(nz(text).toUpperCase(Locale.ENGLISH),
+				new Font(Font.HELVETICA, 13.5f, Font.BOLD, accent)));
+		cell.setBorder(Rectangle.NO_BORDER);
+		cell.setBackgroundColor(tint(accent, 0.1f));
+		cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+		cell.setPaddingTop(6);
+		cell.setPaddingBottom(8);
+		band.addCell(cell);
+		band.setSpacingBefore(2);
+		band.setSpacingAfter(14);
+		add(doc, band);
+	}
+
+	/** A section heading inside a document, e.g. "Student information". */
+	public static void section(Document doc, String text) {
+		Color accent = accent();
+		PdfPTable t = new PdfPTable(1);
+		t.setWidthPercentage(100);
+		PdfPCell c = new PdfPCell(new Phrase(nz(text), new Font(Font.HELVETICA, 10.5f, Font.BOLD, accent)));
+		c.setBorder(Rectangle.BOTTOM);
+		c.setBorderColorBottom(tint(accent, 0.45f));
+		c.setBorderWidthBottom(1f);
+		c.setPaddingLeft(0);
+		c.setPaddingBottom(4);
+		t.addCell(c);
+		t.setSpacingBefore(8);
+		t.setSpacingAfter(5);
+		add(doc, t);
 	}
 
 	public static void paragraph(Document doc, String text) {
 		Paragraph p = new Paragraph(text, BODY);
 		p.setAlignment(Element.ALIGN_JUSTIFIED);
-		p.setLeading(18);
-		p.setSpacingAfter(10);
+		p.setLeading(16);
+		p.setSpacingAfter(9);
 		add(doc, p);
+	}
+
+	/** Text in a light box with a small heading, e.g. terms and conditions. */
+	public static void box(Document doc, String heading, String text) {
+		PdfPTable t = new PdfPTable(1);
+		t.setWidthPercentage(100);
+		PdfPCell c = new PdfPCell();
+		c.setBorderColor(BORDER);
+		c.setBackgroundColor(new Color(250, 250, 252));
+		c.setPadding(8);
+		if (heading != null) {
+			c.addElement(new Paragraph(heading, new Font(Font.HELVETICA, 9.5f, Font.BOLD, accent())));
+		}
+		Paragraph p = new Paragraph(nz(text), new Font(Font.HELVETICA, 9, Font.NORMAL, new Color(50, 54, 64)));
+		p.setLeading(12.5f);
+		p.setAlignment(Element.ALIGN_JUSTIFIED);
+		c.addElement(p);
+		t.addCell(c);
+		t.setSpacingAfter(10);
+		add(doc, t);
 	}
 
 	public static void line(Document doc, String left, String right) {
 		PdfPTable table = new PdfPTable(2);
 		table.setWidthPercentage(100);
-		PdfPCell l = new PdfPCell(new Phrase(nz(left), BODY));
+		PdfPCell l = new PdfPCell(new Phrase(nz(left), BODY_BOLD));
 		l.setBorder(Rectangle.NO_BORDER);
+		l.setPaddingLeft(0);
 		PdfPCell r = new PdfPCell(new Phrase(nz(right), BODY));
 		r.setBorder(Rectangle.NO_BORDER);
 		r.setHorizontalAlignment(Element.ALIGN_RIGHT);
+		r.setPaddingRight(0);
 		table.addCell(l);
 		table.addCell(r);
 		table.setSpacingAfter(10);
@@ -117,16 +273,103 @@ public final class PdfKit {
 	public static void details(Document doc, List<String[]> rows) {
 		PdfPTable table = new PdfPTable(new float[] { 2.2f, 5f });
 		table.setWidthPercentage(100);
+		Color labelBg = tint(accent(), 0.07f);
 		for (String[] row : rows) {
-			PdfPCell label = new PdfPCell(new Phrase(row[0], BODY_BOLD));
-			label.setPadding(5);
-			label.setBackgroundColor(new Color(243, 244, 246));
+			PdfPCell label = new PdfPCell(new Phrase(row[0], LABEL));
+			label.setPadding(6);
+			label.setBorderColor(BORDER);
+			label.setBackgroundColor(labelBg);
 			PdfPCell value = new PdfPCell(new Phrase(nz(row[1]), BODY));
-			value.setPadding(5);
+			value.setPadding(6);
+			value.setBorderColor(BORDER);
 			table.addCell(label);
 			table.addCell(value);
 		}
 		table.setSpacingAfter(12);
+		add(doc, table);
+	}
+
+	/**
+	 * Form fields in a grid of {@code pairs} label/value pairs per row, with room to write by hand when a value is
+	 * empty. A field whose label ends with "*" takes the whole row.
+	 */
+	public static void fields(Document doc, List<String[]> fields, int pairs) {
+		float[] widths = new float[pairs * 2];
+		for (int i = 0; i < pairs; i++) {
+			widths[i * 2] = 1.35f;
+			widths[i * 2 + 1] = 2.4f;
+		}
+		PdfPTable table = new PdfPTable(widths);
+		table.setWidthPercentage(100);
+		Color labelBg = tint(accent(), 0.07f);
+		int used = 0;
+		for (String[] f : fields) {
+			boolean wide = f[0].endsWith("*");
+			if (wide && used > 0) {
+				fillRow(table, pairs - used);
+				used = 0;
+			}
+			PdfPCell label = new PdfPCell(new Phrase(wide ? f[0].substring(0, f[0].length() - 1) : f[0], LABEL));
+			label.setBorderColor(BORDER);
+			label.setBackgroundColor(labelBg);
+			label.setPadding(5);
+			label.setVerticalAlignment(Element.ALIGN_MIDDLE);
+			PdfPCell value = new PdfPCell(new Phrase(nz(f[1]), BODY));
+			value.setBorderColor(BORDER);
+			value.setPadding(5);
+			value.setMinimumHeight(22);
+			value.setVerticalAlignment(Element.ALIGN_MIDDLE);
+			if (wide) {
+				value.setColspan(pairs * 2 - 1);
+			}
+			table.addCell(label);
+			table.addCell(value);
+			used = wide ? 0 : (used + 1) % pairs;
+		}
+		if (used > 0) {
+			fillRow(table, pairs - used);
+		}
+		table.setSpacingAfter(6);
+		add(doc, table);
+	}
+
+	private static void fillRow(PdfPTable table, int missingPairs) {
+		PdfPCell blank = new PdfPCell();
+		blank.setBorderColor(BORDER);
+		blank.setColspan(missingPairs * 2);
+		table.addCell(blank);
+	}
+
+	/** Tick boxes, e.g. the documents attached to an admission form. */
+	public static void checklist(Document doc, List<String> items, int columns) {
+		if (items.isEmpty()) {
+			return;
+		}
+		PdfPTable table = new PdfPTable(columns);
+		table.setWidthPercentage(100);
+		for (String item : items) {
+			PdfPTable row = new PdfPTable(new float[] { 0.6f, 9f });
+			row.setWidthPercentage(100);
+			PdfPCell box = new PdfPCell();
+			box.setFixedHeight(9);
+			box.setBorderColor(MUTED);
+			box.setBorderWidth(0.8f);
+			row.addCell(box);
+			PdfPCell text = new PdfPCell(new Phrase(item, new Font(Font.HELVETICA, 9.5f, Font.NORMAL, new Color(40, 44, 54))));
+			text.setBorder(Rectangle.NO_BORDER);
+			text.setPaddingTop(0);
+			text.setPaddingLeft(5);
+			row.addCell(text);
+			PdfPCell holder = new PdfPCell(row);
+			holder.setBorder(Rectangle.NO_BORDER);
+			holder.setPadding(3);
+			table.addCell(holder);
+		}
+		int remainder = items.size() % columns;
+		for (int i = remainder; remainder != 0 && i < columns; i++) {
+			table.addCell(empty());
+		}
+		table.setSpacingAfter(6);
 		add(doc, table);
 	}
 
@@ -137,8 +380,11 @@ public final class PdfKit {
 			return;
 		}
 		PdfPTable table = new PdfPTable(columns);
-		table.setWidthPercentage(100);
-		table.setSpacingBefore(40);
+		// One signer: a short line at the right, not across the page
+		table.setWidthPercentage(columns == 1 ? 38 : 100);
+		table.setHorizontalAlignment(columns == 1 ? Element.ALIGN_RIGHT : Element.ALIGN_CENTER);
+		table.setSpacingBefore(36);
+		table.setKeepTogether(true);
 		if (includeStamp) {
 			table.addCell(imageCell(lh.stamp(), 70));
 		}
@@ -147,6 +393,7 @@ public final class PdfKit {
 			PdfPCell cell = new PdfPCell();
 			cell.setBorder(Rectangle.NO_BORDER);
 			cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+			cell.setVerticalAlignment(Element.ALIGN_BOTTOM);
 			if (sig.isPresent() && sig.get().image() != null) {
 				Image image = image(sig.get().image());
 				if (image != null) {
@@ -155,13 +402,65 @@ public final class PdfKit {
 					cell.addElement(image);
 				}
 			}
-			addCentred(cell, "______________________", BODY);
+			cell.addElement(new Paragraph(new Chunk(new org.openpdf.text.pdf.draw.LineSeparator(0.8f, 80f, MUTED,
+					Element.ALIGN_CENTER, -2))));
 			addCentred(cell, sig.map(Letterhead.SignatureImage::name).orElse(""), BODY_BOLD);
 			addCentred(cell, sig.map(s -> s.title() == null || s.title().isBlank() ? s.role() : s.title()).orElse(role),
 					SMALL);
 			table.addCell(cell);
 		}
 		add(doc, table);
+	}
+
+	/** Footer (school name or footer line, page number) and the faint logo watermark, on every page. */
+	private static final class Decorations extends PdfPageEventHelper {
+
+		private final Letterhead lh;
+
+		private final Image watermark;
+
+		Decorations(Letterhead lh) {
+			this.lh = lh;
+			this.watermark = lh.style().watermark() ? image(lh.logo()) : null;
+		}
+
+		@Override
+		public void onEndPage(PdfWriter writer, Document document) {
+			Rectangle page = document.getPageSize();
+			if (watermark != null) {
+				try {
+					PdfContentByte under = writer.getDirectContentUnder();
+					under.saveState();
+					PdfGState state = new PdfGState();
+					state.setFillOpacity(0.06f);
+					under.setGState(state);
+					float size = Math.min(page.getWidth(), page.getHeight()) * 0.55f;
+					watermark.scaleToFit(size, size);
+					watermark.setAbsolutePosition((page.getWidth() - watermark.getScaledWidth()) / 2,
+							(page.getHeight() - watermark.getScaledHeight()) / 2);
+					under.addImage(watermark);
+					under.restoreState();
+				}
+				catch (Exception ex) {
+					// print without the watermark
+				}
+			}
+			PdfContentByte cb = writer.getDirectContent();
+			float y = document.bottom() - 16;
+			cb.saveState();
+			cb.setColorStroke(tint(lh.style().accent(), 0.45f));
+			cb.setLineWidth(0.6f);
+			cb.moveTo(document.left(), y + 9);
+			cb.lineTo(document.right(), y + 9);
+			cb.stroke();
+			cb.restoreState();
+			Font font = new Font(Font.HELVETICA, 7.5f, Font.NORMAL, MUTED);
+			String footer = lh.style().footer();
+			String left = footer == null || footer.isBlank() ? nz(lh.schoolName()) : footer;
+			ColumnText.showTextAligned(cb, Element.ALIGN_LEFT, new Phrase(left, font), document.left(), y, 0);
+			ColumnText.showTextAligned(cb, Element.ALIGN_RIGHT, new Phrase("Page " + writer.getPageNumber(), font),
+					document.right(), y, 0);
+		}
 	}
 
 	public static String date(LocalDate date) {

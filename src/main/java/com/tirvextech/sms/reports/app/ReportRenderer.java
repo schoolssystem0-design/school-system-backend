@@ -60,10 +60,7 @@ final class ReportRenderer {
 	}
 
 	private static void section(Document d, Section s) {
-		Paragraph title = new Paragraph(s.title(), PdfKit.HEADING);
-		title.setSpacingBefore(12);
-		title.setSpacingAfter(4);
-		PdfKit.add(d, title);
+		PdfKit.section(d, s.title());
 		if (s.note() != null) {
 			Paragraph note = new Paragraph(s.note(), PdfKit.SMALL);
 			note.setSpacingAfter(4);
@@ -77,7 +74,7 @@ final class ReportRenderer {
 		t.setWidthPercentage(100);
 		t.setHeaderRows(1);
 		for (Column c : s.columns()) {
-			t.addCell(cell(c.name(), CELL_BOLD, c.kind(), new Color(243, 244, 246)));
+			t.addCell(cell(c.name(), CELL_BOLD, c.kind(), PdfKit.tint(PdfKit.accent(), 0.1f)));
 		}
 		for (List<String> row : s.rows()) {
 			for (int i = 0; i < s.columns().size(); i++) {
@@ -91,6 +88,7 @@ final class ReportRenderer {
 	private static PdfPCell cell(String text, org.openpdf.text.Font font, Kind kind, Color background) {
 		PdfPCell c = new PdfPCell(new Phrase(text, font));
 		c.setPadding(3.5f);
+		c.setBorderColor(PdfKit.BORDER);
 		if (kind != Kind.TEXT && kind != Kind.AUTO) {
 			c.setHorizontalAlignment(Element.ALIGN_RIGHT);
 		}

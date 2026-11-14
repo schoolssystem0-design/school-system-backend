@@ -9,7 +9,9 @@ import java.util.Optional;
 public interface SchoolLookup {
 
 	/** {@code trialEndsAt}: end of the free trial, or null for full access. */
-	record SchoolRef(long id, String code, String name, boolean active, java.time.Instant trialEndsAt) {
+	/** {@code billingPaused}: a subscription invoice is unpaid past its due date plus the grace days. */
+	record SchoolRef(long id, String code, String name, boolean active, java.time.Instant trialEndsAt,
+			boolean billingPaused) {
 
 		public boolean trialEnded(java.time.Instant now) {
 			return trialEndsAt != null && !now.isBefore(trialEndsAt);

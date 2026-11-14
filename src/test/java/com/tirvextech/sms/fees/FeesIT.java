@@ -650,7 +650,10 @@ class FeesIT extends IntegrationTest {
 		// QA-FEE-025: collections by head match fee income
 		admin.get("/api/v1/fees/reports/collections?from=%s&to=%s".formatted(today, today))
 			.andExpect(jsonPath("$[0].collected").value("1000.00"));
-		admin.get("/api/v1/fees/students/" + ali + "/admission-proposal").andExpect(jsonPath("$.length()").value(0));
+		// Nothing already billed is proposed again (an earlier unbilled month may be, e.g. when admitted last month)
+		admin.get("/api/v1/fees/students/" + ali + "/admission-proposal")
+			.andExpect(jsonPath("$[?(@.periodKey == '%s')]".formatted(month)).isEmpty())
+			.andExpect(jsonPath("$[?(@.periodKey == 'ONCE')]").isEmpty());
 		assertReconciles();
 	}
 }

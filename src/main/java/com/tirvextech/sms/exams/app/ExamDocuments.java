@@ -53,7 +53,9 @@ public class ExamDocuments {
 	private static final org.openpdf.text.Font CELL_BOLD = new org.openpdf.text.Font(org.openpdf.text.Font.HELVETICA, 9,
 			org.openpdf.text.Font.BOLD);
 
-	private static final Color HEAD = new Color(243, 244, 246);
+	private static Color head() {
+		return PdfKit.tint(PdfKit.accent(), 0.1f);
+	}
 
 	private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("EEE dd-MM-yyyy", Locale.ENGLISH);
 
@@ -93,7 +95,7 @@ public class ExamDocuments {
 			PdfPTable t = new PdfPTable(new float[] { 3f, 3f, 3f, 5f });
 			t.setWidthPercentage(100);
 			for (String h : List.of("Date", "Time", "Subject", "Syllabus")) {
-				cell(t, h, CELL_BOLD, HEAD);
+				cell(t, h, CELL_BOLD, head());
 			}
 			for (PaperView p : dated(ec)) {
 				cell(t, p.paperDate() == null ? "To be announced" : DAY.format(p.paperDate()), CELL, null);
@@ -133,7 +135,7 @@ public class ExamDocuments {
 			g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 24));
 			centre(g, "Datesheet: " + ec.examName() + " - " + ec.className(), width, 138);
 			int[] cols = { 30, 290, 500, 970 };
-			g.setColor(HEAD);
+			g.setColor(head());
 			g.fillRect(cols[0], top, cols[3] - cols[0], rowH);
 			g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 19));
 			g.setColor(Color.BLACK);
@@ -269,7 +271,7 @@ public class ExamDocuments {
 				PdfPTable t = new PdfPTable(new float[] { 2f, 5f, 3f });
 				t.setWidthPercentage(100);
 				for (String h : List.of("GR no.", "Name", "Class")) {
-					cell(t, h, CELL_BOLD, HEAD);
+					cell(t, h, CELL_BOLD, head());
 				}
 				for (String[] h : held) {
 					for (String v : h) {
@@ -310,18 +312,18 @@ public class ExamDocuments {
 			PdfPTable t = new PdfPTable(widths);
 			t.setWidthPercentage(100);
 			t.setHeaderRows(1);
-			cell(t, "GR", CELL_BOLD, HEAD);
-			cell(t, "Name", CELL_BOLD, HEAD);
-			cell(t, "Section", CELL_BOLD, HEAD);
+			cell(t, "GR", CELL_BOLD, head());
+			cell(t, "Name", CELL_BOLD, head());
+			cell(t, "Section", CELL_BOLD, head());
 			for (PaperView p : papers) {
-				cell(t, p.subjectName() + (gradeOnly ? "" : " (" + p.maxMarks() + ")"), CELL_BOLD, HEAD);
+				cell(t, p.subjectName() + (gradeOnly ? "" : " (" + p.maxMarks() + ")"), CELL_BOLD, head());
 			}
 			if (!gradeOnly) {
 				for (String h : List.of("Total", "%", "Grade", "Position")) {
-					cell(t, h, CELL_BOLD, HEAD);
+					cell(t, h, CELL_BOLD, head());
 				}
 			}
-			cell(t, "Result", CELL_BOLD, HEAD);
+			cell(t, "Result", CELL_BOLD, head());
 			for (StudentResult s : r.students()) {
 				cell(t, s.grNo(), CELL, null);
 				cell(t, s.name(), CELL, null);
@@ -430,7 +432,7 @@ public class ExamDocuments {
 
 	private static void labelled(PdfPTable t, String label, String value) {
 		PdfPCell l = new PdfPCell(new Phrase(label, CELL_BOLD));
-		l.setBackgroundColor(HEAD);
+		l.setBackgroundColor(head());
 		l.setPadding(4);
 		PdfPCell v = new PdfPCell(new Phrase(PdfKit.nz(value), CELL));
 		v.setPadding(4);
@@ -455,7 +457,7 @@ public class ExamDocuments {
 		widths[0] = 3.5f;
 		PdfPTable t = new PdfPTable(widths);
 		t.setWidthPercentage(100);
-		heads.forEach(h -> cell(t, h, CELL_BOLD, HEAD));
+		heads.forEach(h -> cell(t, h, CELL_BOLD, head()));
 		for (PaperResult p : s.papers()) {
 			cell(t, p.subject(), CELL_BOLD, null);
 			if (gradeOnly) {
@@ -504,11 +506,11 @@ public class ExamDocuments {
 		outer.setWidthPercentage(100);
 		PdfPTable marksTable = new PdfPTable(gradeOnly ? new float[] { 4f, 2f } : new float[] { 4f, 2f, 2f });
 		marksTable.setWidthPercentage(100);
-		cell(marksTable, "Subject", CELL_BOLD, HEAD);
+		cell(marksTable, "Subject", CELL_BOLD, head());
 		if (!gradeOnly) {
-			cell(marksTable, "Marks", CELL_BOLD, HEAD);
+			cell(marksTable, "Marks", CELL_BOLD, head());
 		}
-		cell(marksTable, "Grade", CELL_BOLD, HEAD);
+		cell(marksTable, "Grade", CELL_BOLD, head());
 		for (PaperResult p : s.papers()) {
 			cell(marksTable, p.subject(), CELL, null);
 			if (!gradeOnly) {
@@ -556,7 +558,7 @@ public class ExamDocuments {
 
 	private static void labelledWide(PdfPTable t, String label, String value) {
 		PdfPCell l = new PdfPCell(new Phrase(label, CELL_BOLD));
-		l.setBackgroundColor(HEAD);
+		l.setBackgroundColor(head());
 		l.setPadding(5);
 		PdfPCell v = new PdfPCell(new Phrase(PdfKit.nz(value), CELL));
 		v.setPadding(5);

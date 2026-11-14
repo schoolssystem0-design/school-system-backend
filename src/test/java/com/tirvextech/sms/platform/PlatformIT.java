@@ -100,7 +100,7 @@ class PlatformIT extends IntegrationTest {
 
 		var db = TestDatabase.superuser();
 		assertThat(db.queryForObject("select count(*) from role where school_id = ? and system_role", Long.class,
-				schoolId)).isEqualTo(9);
+				schoolId)).isEqualTo(10);
 		assertThat(db.queryForObject("select is_main_admin from app_user where school_id = ? and username = 'headadmin'",
 				Boolean.class, schoolId)).isTrue();
 		assertThat(db.queryForObject("select name from school_profile where school_id = ?", String.class, schoolId))

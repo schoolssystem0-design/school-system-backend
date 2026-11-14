@@ -115,8 +115,8 @@ public class SalarySlips {
 		a.setPadding(4);
 		a.setHorizontalAlignment(Element.ALIGN_RIGHT);
 		if (bold) {
-			l.setBackgroundColor(new Color(243, 244, 246));
-			a.setBackgroundColor(new Color(243, 244, 246));
+			l.setBackgroundColor(PdfKit.tint(PdfKit.accent(), 0.1f));
+			a.setBackgroundColor(PdfKit.tint(PdfKit.accent(), 0.1f));
 		}
 		t.addCell(l);
 		t.addCell(a);

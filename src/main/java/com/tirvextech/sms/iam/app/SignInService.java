@@ -77,6 +77,10 @@ public class SignInService {
 		if (!school.active()) {
 			throw new ApiException(HttpStatus.LOCKED, "SCHOOL_SUSPENDED", "This school's account is suspended");
 		}
+		if (school.billingPaused()) {
+			throw new ApiException(HttpStatus.LOCKED, "SUBSCRIPTION_UNPAID",
+					"Access is paused because the subscription invoice is unpaid. It returns as soon as the payment is received; all your data is kept.");
+		}
 		if (school.trialEnded(clock.instant())) {
 			throw new ApiException(HttpStatus.LOCKED, "TRIAL_ENDED",
 					"This school's 14-day free trial has ended. Contact us to continue: all your data is kept.");

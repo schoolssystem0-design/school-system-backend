@@ -42,7 +42,9 @@ class SchoolUserRefresher implements PrincipalRefresher {
 		SchoolUserPrincipal user = (SchoolUserPrincipal) principal;
 		List<Map<String, Object>> rows = jdbc.queryForList("""
 				select u.status as user_status, u.must_change_password, u.data_scope, s.status as school_status,
-				       (s.trial_ends_at is null or s.trial_ends_at > now()) as trial_ok
+				       (s.trial_ends_at is null or s.trial_ends_at > now()) as trial_ok,
+				       not exists (select 1 from platform_invoice pi where pi.billed_school_id = s.id and pi.status = 'UNPAID'
+				                   and pi.due_on + pi.grace_days < (now() at time zone 'Asia/Karachi')::date) as billing_ok
 				from app_user u join school s on s.id = u.school_id
 				where u.id = ? and u.school_id = ?""", user.userId(), user.schoolId());
 		if (rows.isEmpty()) {
@@ -50,7 +52,7 @@ class SchoolUserRefresher implements PrincipalRefresher {
 		}
 		Map<String, Object> row = rows.getFirst();
 		if (!"ACTIVE".equals(row.get("user_status")) || !"ACTIVE".equals(row.get("school_status"))
-				|| !Boolean.TRUE.equals(row.get("trial_ok"))) {
+				|| !Boolean.TRUE.equals(row.get("trial_ok")) || !Boolean.TRUE.equals(row.get("billing_ok"))) {
 			return Refreshed.invalid();
 		}
 		List<GrantedAuthority> authorities = new ArrayList<>();
