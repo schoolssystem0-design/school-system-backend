@@ -177,6 +177,21 @@ public class TeachingService {
 			throw ApiException.conflict("STAFF_LEFT", replacement.name() + " has left the school");
 		}
 		LocalDate start = clampToYear(from, year);
+		// The replacement takes over the timetable too: refuse if that would put them in two sections at once
+		List<String> clashes = jdbc.queryForList("""
+				select c.name || ' - ' || s.name || ', ' || trim(to_char(date '2024-01-07' + f.weekday, 'Day')) || ' period ' || f.period_no
+				from timetable_period f
+				join timetable_period t on t.academic_year_id = f.academic_year_id and t.weekday = f.weekday
+				  and t.period_no = f.period_no and t.staff_id = ? and t.section_id <> f.section_id
+				join section s on s.id = t.section_id join school_class c on c.id = s.class_id
+				where f.academic_year_id = ? and f.staff_id = ?
+				order by f.weekday, f.period_no""", String.class, toStaffId, yearId, fromStaffId);
+		if (!clashes.isEmpty()) {
+			throw ApiException.conflict("TEACHER_DOUBLE_BOOKED", replacement.name() + " already teaches at the same time: "
+					+ String.join("; ", clashes.subList(0, Math.min(5, clashes.size())))
+					+ (clashes.size() > 5 ? " and " + (clashes.size() - 5) + " more" : "")
+					+ ". Change those periods in the timetable first.");
+		}
 		List<AssignmentView> open = assignments(yearId, null, fromStaffId, true);
 		for (AssignmentView a : open) {
 			var target = open(yearId, a.sectionId(), a.subjectId());
@@ -232,12 +247,20 @@ public class TeachingService {
 				(Long) rs.getObject(7), rs.getString(8), (Long) rs.getObject(9), rs.getString(10)), args.toArray());
 	}
 
-	/** Replaces a section's weekly timetable; a teacher cannot be in two sections in the same period. */
+	/**
+	 * Replaces a section's weekly timetable. A teacher cannot be in two sections in the same period; subjects must be
+	 * taught in the class this year; teachers must still work at the school; a period cannot end before it starts. A
+	 * period with times but no subject or teacher is kept, so the bell times of a free period are not lost.
+	 */
 	@Transactional
 	public List<PeriodView> saveTimetable(long yearId, long sectionId, List<Period> periods) {
-		writableYear(yearId);
-		structure.requireSection(sectionId);
+		YearRef year = writableYear(yearId);
+		var section = structure.requireSection(sectionId);
 		Set<String> slots = new HashSet<>();
+		Set<Long> classSubjects = new HashSet<>(jdbc.queryForList("""
+				select subject_id from class_subject where academic_year_id = ? and class_id = ? and status = 'ACTIVE'""",
+				Long.class, yearId, section.classId()));
+		Map<Long, StaffService.StaffRef> teachers = new java.util.HashMap<>();
 		for (Period p : periods) {
 			if (p.weekday() < 1 || p.weekday() > 7 || p.periodNo() < 1 || p.periodNo() > 15) {
 				throw ApiException.businessRule("PERIOD_INVALID", "Weekday 1-7 and period 1-15");
@@ -245,14 +268,29 @@ public class TeachingService {
 			if (!slots.add(p.weekday() + ":" + p.periodNo())) {
 				throw ApiException.businessRule("PERIOD_DUPLICATE", "A period appears twice");
 			}
+			if (p.startTime() != null && p.endTime() != null && !p.endTime().isAfter(p.startTime())) {
+				throw ApiException.businessRule("PERIOD_TIME_INVALID",
+						"Period " + p.periodNo() + " must end after it starts");
+			}
+			if (p.subjectId() != null && !classSubjects.contains(p.subjectId())) {
+				throw ApiException.businessRule("SUBJECT_NOT_IN_CLASS", "A subject in " + dayName(p.weekday()) + ", period "
+						+ p.periodNo() + " is not taught in " + section.className() + " in " + year.name()
+						+ ". Add it under Subjects & marks first.");
+			}
 			if (p.staffId() != null) {
-				Long clash = jdbc.queryForObject("""
-						select count(*) from timetable_period where academic_year_id = ? and staff_id = ?
-						  and weekday = ? and period_no = ? and section_id <> ?""", Long.class, yearId, p.staffId(),
-						p.weekday(), p.periodNo(), sectionId);
-				if (clash != null && clash > 0) {
-					throw ApiException.conflict("TEACHER_DOUBLE_BOOKED", staff.ref(p.staffId()).name()
-							+ " already teaches another section on day " + p.weekday() + ", period " + p.periodNo());
+				var teacher = teachers.computeIfAbsent(p.staffId(), this::teacher);
+				if (!teacher.active()) {
+					throw ApiException.conflict("STAFF_LEFT", teacher.name() + " has left the school");
+				}
+				List<String> clash = jdbc.queryForList("""
+						select c.name || ' - ' || s.name from timetable_period t
+						join section s on s.id = t.section_id join school_class c on c.id = s.class_id
+						where t.academic_year_id = ? and t.staff_id = ? and t.weekday = ? and t.period_no = ?
+						  and t.section_id <> ?""", String.class, yearId, p.staffId(), p.weekday(), p.periodNo(),
+						sectionId);
+				if (!clash.isEmpty()) {
+					throw ApiException.conflict("TEACHER_DOUBLE_BOOKED", teacher.name() + " already teaches "
+							+ clash.getFirst() + " on " + dayName(p.weekday()) + ", period " + p.periodNo());
 				}
 			}
 		}
@@ -270,6 +308,20 @@ public class TeachingService {
 	}
 
 	// ---------------------------------------------------------------- helpers
+
+	private static String dayName(int weekday) {
+		return java.time.DayOfWeek.of(weekday).getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.ENGLISH);
+	}
+
+	/** A staff member by id, or a clear error when there is none. */
+	private StaffService.StaffRef teacher(long staffId) {
+		try {
+			return staff.ref(staffId);
+		}
+		catch (ApiException ex) {
+			throw ApiException.businessRule("STAFF_NOT_FOUND", "That teacher was not found. Reload the page and try again.");
+		}
+	}
 
 	private java.util.Optional<AssignmentView> open(long yearId, long sectionId, Long subjectId) {
 		return assignments(yearId, sectionId, null, true).stream()
