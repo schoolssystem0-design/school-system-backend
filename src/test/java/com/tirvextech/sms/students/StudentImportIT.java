@@ -1,14 +1,14 @@
-package com.selectcode.sms.students;
+package com.tirvextech.sms.students;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.selectcode.sms.shared.security.Permissions;
-import com.selectcode.sms.support.ApiClient;
-import com.selectcode.sms.support.IntegrationTest;
-import com.selectcode.sms.support.TestData;
-import com.selectcode.sms.support.TestDatabase;
+import com.tirvextech.sms.shared.security.Permissions;
+import com.tirvextech.sms.support.ApiClient;
+import com.tirvextech.sms.support.IntegrationTest;
+import com.tirvextech.sms.support.TestData;
+import com.tirvextech.sms.support.TestDatabase;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDate;

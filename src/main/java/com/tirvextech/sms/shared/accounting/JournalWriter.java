@@ -1,8 +1,8 @@
-package com.selectcode.sms.shared.accounting;
+package com.tirvextech.sms.shared.accounting;
 
-import com.selectcode.sms.shared.security.CurrentActor;
-import com.selectcode.sms.shared.tenant.TenantContext;
-import com.selectcode.sms.shared.web.ApiException;
+import com.tirvextech.sms.shared.security.CurrentActor;
+import com.tirvextech.sms.shared.tenant.TenantContext;
+import com.tirvextech.sms.shared.web.ApiException;
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.time.LocalDate;

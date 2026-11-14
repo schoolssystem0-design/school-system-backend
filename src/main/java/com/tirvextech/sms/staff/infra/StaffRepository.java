@@ -1,6 +1,6 @@
-package com.selectcode.sms.staff.infra;
+package com.tirvextech.sms.staff.infra;
 
-import com.selectcode.sms.staff.domain.Staff;
+import com.tirvextech.sms.staff.domain.Staff;
 import java.util.Collection;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

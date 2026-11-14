@@ -1,7 +1,7 @@
-package com.selectcode.sms.school.api;
+package com.tirvextech.sms.school.api;
 
-import com.selectcode.sms.school.app.PublicSchoolLogo;
-import com.selectcode.sms.shared.security.PublicEndpoint;
+import com.tirvextech.sms.school.app.PublicSchoolLogo;
+import com.tirvextech.sms.shared.security.PublicEndpoint;
 import java.time.Duration;
 import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;

@@ -1,13 +1,13 @@
-package com.selectcode.sms.attendance.app;
+package com.tirvextech.sms.attendance.app;
 
-import com.selectcode.sms.academics.AcademicStructure;
-import com.selectcode.sms.iam.SchoolUserAdministration;
-import com.selectcode.sms.shared.security.ActorType;
-import com.selectcode.sms.shared.security.CurrentActor;
-import com.selectcode.sms.shared.security.DataScope;
-import com.selectcode.sms.shared.web.ApiException;
-import com.selectcode.sms.shared.year.AcademicYearLookup;
-import com.selectcode.sms.shared.year.AcademicYearLookup.YearRef;
+import com.tirvextech.sms.academics.AcademicStructure;
+import com.tirvextech.sms.iam.SchoolUserAdministration;
+import com.tirvextech.sms.shared.security.ActorType;
+import com.tirvextech.sms.shared.security.CurrentActor;
+import com.tirvextech.sms.shared.security.DataScope;
+import com.tirvextech.sms.shared.web.ApiException;
+import com.tirvextech.sms.shared.year.AcademicYearLookup;
+import com.tirvextech.sms.shared.year.AcademicYearLookup.YearRef;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.util.List;

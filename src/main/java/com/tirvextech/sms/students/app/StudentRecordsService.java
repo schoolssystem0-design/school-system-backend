@@ -1,11 +1,11 @@
-package com.selectcode.sms.students.app;
+package com.tirvextech.sms.students.app;
 
-import com.selectcode.sms.shared.audit.AuditService;
-import com.selectcode.sms.shared.files.FileService;
-import com.selectcode.sms.shared.tenant.TenantContext;
-import com.selectcode.sms.shared.validation.PakFormats;
-import com.selectcode.sms.shared.web.ApiException;
-import com.selectcode.sms.students.StudentService;
+import com.tirvextech.sms.shared.audit.AuditService;
+import com.tirvextech.sms.shared.files.FileService;
+import com.tirvextech.sms.shared.tenant.TenantContext;
+import com.tirvextech.sms.shared.validation.PakFormats;
+import com.tirvextech.sms.shared.web.ApiException;
+import com.tirvextech.sms.students.StudentService;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.util.List;

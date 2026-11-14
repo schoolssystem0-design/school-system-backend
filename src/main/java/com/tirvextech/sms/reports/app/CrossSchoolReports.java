@@ -1,19 +1,19 @@
-package com.selectcode.sms.reports.app;
+package com.tirvextech.sms.reports.app;
 
-import static com.selectcode.sms.reports.app.ReportDoc.money;
-import static com.selectcode.sms.reports.app.ReportDoc.number;
-import static com.selectcode.sms.reports.app.ReportDoc.percent;
-import static com.selectcode.sms.reports.app.ReportDoc.text;
-import static com.selectcode.sms.reports.app.ReportRenderer.row;
+import static com.tirvextech.sms.reports.app.ReportDoc.money;
+import static com.tirvextech.sms.reports.app.ReportDoc.number;
+import static com.tirvextech.sms.reports.app.ReportDoc.percent;
+import static com.tirvextech.sms.reports.app.ReportDoc.text;
+import static com.tirvextech.sms.reports.app.ReportRenderer.row;
 
-import com.selectcode.sms.reports.app.ReportDoc.Section;
-import com.selectcode.sms.shared.attendance.AttendancePercent;
-import com.selectcode.sms.shared.audit.AuditService;
-import com.selectcode.sms.shared.money.MoneyInput;
-import com.selectcode.sms.shared.pdf.Letterhead;
-import com.selectcode.sms.shared.pdf.PdfKit;
-import com.selectcode.sms.shared.tenant.TenantContext;
-import com.selectcode.sms.shared.web.ApiException;
+import com.tirvextech.sms.reports.app.ReportDoc.Section;
+import com.tirvextech.sms.shared.attendance.AttendancePercent;
+import com.tirvextech.sms.shared.audit.AuditService;
+import com.tirvextech.sms.shared.money.MoneyInput;
+import com.tirvextech.sms.shared.pdf.Letterhead;
+import com.tirvextech.sms.shared.pdf.PdfKit;
+import com.tirvextech.sms.shared.tenant.TenantContext;
+import com.tirvextech.sms.shared.web.ApiException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Date;
@@ -186,7 +186,8 @@ public class CrossSchoolReports {
 		}
 		ReportDoc doc = new ReportDoc("ALL SCHOOLS REPORT", heading, sections);
 		byte[] file = switch (format) {
-			case "pdf" -> ReportRenderer.pdf(doc, new Letterhead("SelectCode", null, null, null, null, null, null, null, null, List.of()));
+			case "pdf" -> ReportRenderer.pdf(doc, new Letterhead("Tirvex Tech", null, null, null, null, null, null, brandLogo(), null,
+					List.of()));
 			case "xlsx" -> ReportRenderer.xlsx(doc, true);
 			default -> throw ApiException.businessRule("FORMAT_INVALID", "Choose PDF or Excel");
 		};
@@ -198,5 +199,15 @@ public class CrossSchoolReports {
 	private static List<String> values(SchoolFigures s) {
 		return row(s.name(), s.students(), s.attendancePercent(), s.billed(), s.collected(), s.outstanding(), s.defaulterFamilies(),
 				s.income(), s.expense(), s.testAverage());
+	}
+
+	/** The Tirvex Tech logo for the owner's reports (null if missing, then the name alone is printed). */
+	private static byte[] brandLogo() {
+		try (var in = CrossSchoolReports.class.getResourceAsStream("/brand/tirvex-logo.png")) {
+			return in == null ? null : in.readAllBytes();
+		}
+		catch (java.io.IOException e) {
+			return null;
+		}
 	}
 }

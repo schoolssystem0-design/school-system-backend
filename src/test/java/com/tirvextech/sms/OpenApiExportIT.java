@@ -1,10 +1,10 @@
-package com.selectcode.sms;
+package com.tirvextech.sms;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.selectcode.sms.support.IntegrationTest;
+import com.tirvextech.sms.support.IntegrationTest;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;

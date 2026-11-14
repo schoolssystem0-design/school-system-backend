@@ -1,11 +1,11 @@
-package com.selectcode.sms.platform.app;
+package com.tirvextech.sms.platform.app;
 
-import com.selectcode.sms.platform.PlatformPrincipal;
-import com.selectcode.sms.platform.domain.PlatformUser;
-import com.selectcode.sms.platform.infra.PlatformUserRepository;
-import com.selectcode.sms.shared.security.Totp;
-import com.selectcode.sms.shared.web.ApiException;
-import com.selectcode.sms.shared.web.RateLimiter;
+import com.tirvextech.sms.platform.PlatformPrincipal;
+import com.tirvextech.sms.platform.domain.PlatformUser;
+import com.tirvextech.sms.platform.infra.PlatformUserRepository;
+import com.tirvextech.sms.shared.security.Totp;
+import com.tirvextech.sms.shared.web.ApiException;
+import com.tirvextech.sms.shared.web.RateLimiter;
 import jakarta.servlet.http.HttpSession;
 import java.io.Serializable;
 import java.time.Clock;

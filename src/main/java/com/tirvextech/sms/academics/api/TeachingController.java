@@ -1,10 +1,10 @@
-package com.selectcode.sms.academics.api;
+package com.tirvextech.sms.academics.api;
 
-import com.selectcode.sms.academics.app.TeachingService;
-import com.selectcode.sms.academics.app.TeachingService.AssignmentView;
-import com.selectcode.sms.academics.app.TeachingService.Period;
-import com.selectcode.sms.academics.app.TeachingService.PeriodView;
-import com.selectcode.sms.shared.security.Permissions;
+import com.tirvextech.sms.academics.app.TeachingService;
+import com.tirvextech.sms.academics.app.TeachingService.AssignmentView;
+import com.tirvextech.sms.academics.app.TeachingService.Period;
+import com.tirvextech.sms.academics.app.TeachingService.PeriodView;
+import com.tirvextech.sms.shared.security.Permissions;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;

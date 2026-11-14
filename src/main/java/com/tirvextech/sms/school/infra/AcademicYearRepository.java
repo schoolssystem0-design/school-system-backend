@@ -1,6 +1,6 @@
-package com.selectcode.sms.school.infra;
+package com.tirvextech.sms.school.infra;
 
-import com.selectcode.sms.school.domain.AcademicYear;
+import com.tirvextech.sms.school.domain.AcademicYear;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;

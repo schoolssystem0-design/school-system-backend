@@ -1,8 +1,8 @@
-package com.selectcode.sms.shared.year;
+package com.tirvextech.sms.shared.year;
 
-import com.selectcode.sms.shared.security.CurrentActor;
-import com.selectcode.sms.shared.security.Permissions;
-import com.selectcode.sms.shared.web.ApiException;
+import com.tirvextech.sms.shared.security.CurrentActor;
+import com.tirvextech.sms.shared.security.Permissions;
+import com.tirvextech.sms.shared.web.ApiException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Optional;
 import org.springframework.http.HttpStatus;

@@ -1,20 +1,20 @@
-package com.selectcode.sms.staff;
+package com.tirvextech.sms.staff;
 
-import com.selectcode.sms.iam.SchoolUserAdministration;
-import com.selectcode.sms.shared.audit.AuditService;
-import com.selectcode.sms.shared.events.StaffLeftEvent;
-import com.selectcode.sms.shared.files.FileService;
-import com.selectcode.sms.shared.money.Money;
-import com.selectcode.sms.shared.persistence.NumberSequences;
-import com.selectcode.sms.shared.security.ActorPrincipal;
-import com.selectcode.sms.shared.security.CurrentActor;
-import com.selectcode.sms.shared.security.DataScope;
-import com.selectcode.sms.shared.validation.PakFormats;
-import com.selectcode.sms.shared.web.ApiException;
-import com.selectcode.sms.shared.web.PageResponse;
-import com.selectcode.sms.staff.domain.Staff;
-import com.selectcode.sms.staff.domain.Staff.StaffDetails;
-import com.selectcode.sms.staff.infra.StaffRepository;
+import com.tirvextech.sms.iam.SchoolUserAdministration;
+import com.tirvextech.sms.shared.audit.AuditService;
+import com.tirvextech.sms.shared.events.StaffLeftEvent;
+import com.tirvextech.sms.shared.files.FileService;
+import com.tirvextech.sms.shared.money.Money;
+import com.tirvextech.sms.shared.persistence.NumberSequences;
+import com.tirvextech.sms.shared.security.ActorPrincipal;
+import com.tirvextech.sms.shared.security.CurrentActor;
+import com.tirvextech.sms.shared.security.DataScope;
+import com.tirvextech.sms.shared.validation.PakFormats;
+import com.tirvextech.sms.shared.web.ApiException;
+import com.tirvextech.sms.shared.web.PageResponse;
+import com.tirvextech.sms.staff.domain.Staff;
+import com.tirvextech.sms.staff.domain.Staff.StaffDetails;
+import com.tirvextech.sms.staff.infra.StaffRepository;
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.time.Clock;
@@ -192,7 +192,7 @@ public class StaffService {
 		Long id = jdbc.queryForObject("""
 				insert into staff_document (school_id, staff_id, doc_type, title, file_id)
 				values (?, ?, ?, ?, ?) returning id""", Long.class,
-				com.selectcode.sms.shared.tenant.TenantContext.requireSchoolId(), staffId,
+				com.tirvextech.sms.shared.tenant.TenantContext.requireSchoolId(), staffId,
 				docType == null ? "OTHER" : docType, cleanTitle, fileId);
 		audit.record("STAFF_DOCUMENT_ADDED", "staff", staffId, null, Map.of("title", cleanTitle));
 		return new StaffDocumentView(id, docType, cleanTitle, fileId);
@@ -240,7 +240,7 @@ public class StaffService {
 				insert into salary_profile (school_id, staff_id, effective_from, basic_salary, per_lecture_rate,
 				                            bank_name, bank_account, reason, created_by_name)
 				values (?, ?, ?, ?, ?, ?, ?, ?, ?) returning id""", Long.class,
-				com.selectcode.sms.shared.tenant.TenantContext.requireSchoolId(), staffId,
+				com.tirvextech.sms.shared.tenant.TenantContext.requireSchoolId(), staffId,
 				Date.valueOf(input.effectiveFrom()), basic.amount(), perLecture == null ? null : perLecture.amount(),
 				PakFormats.trimToNull(input.bankName()), PakFormats.trimToNull(input.bankAccount()), reason,
 				actor.displayName());

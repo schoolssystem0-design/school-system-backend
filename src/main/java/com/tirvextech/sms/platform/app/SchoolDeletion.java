@@ -1,10 +1,10 @@
-package com.selectcode.sms.platform.app;
+package com.tirvextech.sms.platform.app;
 
-import com.selectcode.sms.iam.SchoolUserAdministration;
-import com.selectcode.sms.platform.domain.School;
-import com.selectcode.sms.platform.infra.SchoolRepository;
-import com.selectcode.sms.shared.tenant.TenantContext;
-import com.selectcode.sms.shared.web.ApiException;
+import com.tirvextech.sms.iam.SchoolUserAdministration;
+import com.tirvextech.sms.platform.domain.School;
+import com.tirvextech.sms.platform.infra.SchoolRepository;
+import com.tirvextech.sms.shared.tenant.TenantContext;
+import com.tirvextech.sms.shared.web.ApiException;
 import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

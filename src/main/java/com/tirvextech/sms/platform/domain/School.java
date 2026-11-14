@@ -1,4 +1,4 @@
-package com.selectcode.sms.platform.domain;
+package com.tirvextech.sms.platform.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

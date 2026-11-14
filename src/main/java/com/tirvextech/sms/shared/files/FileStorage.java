@@ -1,4 +1,4 @@
-package com.selectcode.sms.shared.files;
+package com.tirvextech.sms.shared.files;
 
 import java.net.URI;
 import java.time.Duration;

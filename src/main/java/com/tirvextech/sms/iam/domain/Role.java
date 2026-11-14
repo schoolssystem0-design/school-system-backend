@@ -1,6 +1,6 @@
-package com.selectcode.sms.iam.domain;
+package com.tirvextech.sms.iam.domain;
 
-import com.selectcode.sms.shared.persistence.TenantScopedEntity;
+import com.tirvextech.sms.shared.persistence.TenantScopedEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

@@ -1,17 +1,17 @@
-package com.selectcode.sms.iam;
+package com.tirvextech.sms.iam;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.selectcode.sms.shared.messaging.DevOutbox;
-import com.selectcode.sms.shared.security.Permissions;
-import com.selectcode.sms.support.ApiClient;
-import com.selectcode.sms.support.IntegrationTest;
-import com.selectcode.sms.support.TestData;
-import com.selectcode.sms.support.TestData.SeededSchool;
-import com.selectcode.sms.support.TestDatabase;
+import com.tirvextech.sms.shared.messaging.DevOutbox;
+import com.tirvextech.sms.shared.security.Permissions;
+import com.tirvextech.sms.support.ApiClient;
+import com.tirvextech.sms.support.IntegrationTest;
+import com.tirvextech.sms.support.TestData;
+import com.tirvextech.sms.support.TestData.SeededSchool;
+import com.tirvextech.sms.support.TestDatabase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

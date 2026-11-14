@@ -1,4 +1,4 @@
-package com.selectcode.sms.shared.web;
+package com.tirvextech.sms.shared.web;
 
 import java.util.List;
 import java.util.function.Function;

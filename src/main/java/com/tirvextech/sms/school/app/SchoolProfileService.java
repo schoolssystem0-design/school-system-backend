@@ -1,12 +1,12 @@
-package com.selectcode.sms.school.app;
+package com.tirvextech.sms.school.app;
 
-import com.selectcode.sms.school.infra.SchoolProfileStore;
-import com.selectcode.sms.school.infra.SchoolProfileStore.Profile;
-import com.selectcode.sms.school.infra.SchoolProfileStore.Signature;
-import com.selectcode.sms.shared.audit.AuditService;
-import com.selectcode.sms.shared.files.FilePurpose;
-import com.selectcode.sms.shared.files.FileService;
-import com.selectcode.sms.shared.web.ApiException;
+import com.tirvextech.sms.school.infra.SchoolProfileStore;
+import com.tirvextech.sms.school.infra.SchoolProfileStore.Profile;
+import com.tirvextech.sms.school.infra.SchoolProfileStore.Signature;
+import com.tirvextech.sms.shared.audit.AuditService;
+import com.tirvextech.sms.shared.files.FilePurpose;
+import com.tirvextech.sms.shared.files.FileService;
+import com.tirvextech.sms.shared.web.ApiException;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

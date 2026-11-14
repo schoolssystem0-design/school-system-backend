@@ -1,11 +1,11 @@
-package com.selectcode.sms.admissions.app;
+package com.tirvextech.sms.admissions.app;
 
-import com.selectcode.sms.academics.AcademicStructure;
-import com.selectcode.sms.shared.audit.AuditService;
-import com.selectcode.sms.shared.pdf.LetterheadSource;
-import com.selectcode.sms.shared.pdf.PdfKit;
-import com.selectcode.sms.shared.tenant.TenantContext;
-import com.selectcode.sms.shared.web.ApiException;
+import com.tirvextech.sms.academics.AcademicStructure;
+import com.tirvextech.sms.shared.audit.AuditService;
+import com.tirvextech.sms.shared.pdf.LetterheadSource;
+import com.tirvextech.sms.shared.pdf.PdfKit;
+import com.tirvextech.sms.shared.tenant.TenantContext;
+import com.tirvextech.sms.shared.web.ApiException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

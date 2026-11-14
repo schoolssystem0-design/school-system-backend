@@ -1,12 +1,12 @@
-package com.selectcode.sms.payroll.api;
+package com.tirvextech.sms.payroll.api;
 
-import com.selectcode.sms.payroll.app.PayrollService;
-import com.selectcode.sms.payroll.app.PayrollService.LineInput;
-import com.selectcode.sms.payroll.app.PayrollService.SheetRow;
-import com.selectcode.sms.payroll.app.PayrollService.SheetView;
-import com.selectcode.sms.payroll.app.SalarySlips;
-import com.selectcode.sms.shared.security.Permissions;
-import com.selectcode.sms.shared.security.RequiresStepUp;
+import com.tirvextech.sms.payroll.app.PayrollService;
+import com.tirvextech.sms.payroll.app.PayrollService.LineInput;
+import com.tirvextech.sms.payroll.app.PayrollService.SheetRow;
+import com.tirvextech.sms.payroll.app.PayrollService.SheetView;
+import com.tirvextech.sms.payroll.app.SalarySlips;
+import com.tirvextech.sms.shared.security.Permissions;
+import com.tirvextech.sms.shared.security.RequiresStepUp;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

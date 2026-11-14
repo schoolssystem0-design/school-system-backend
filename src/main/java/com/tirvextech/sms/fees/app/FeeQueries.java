@@ -1,8 +1,8 @@
-package com.selectcode.sms.fees.app;
+package com.tirvextech.sms.fees.app;
 
-import com.selectcode.sms.shared.web.ApiException;
-import com.selectcode.sms.shared.web.PageResponse;
-import com.selectcode.sms.shared.year.YearContext;
+import com.tirvextech.sms.shared.web.ApiException;
+import com.tirvextech.sms.shared.web.PageResponse;
+import com.tirvextech.sms.shared.year.YearContext;
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.time.Instant;

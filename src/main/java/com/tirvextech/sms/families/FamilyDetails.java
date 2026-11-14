@@ -1,4 +1,4 @@
-package com.selectcode.sms.families;
+package com.tirvextech.sms.families;
 
 /**
  * A family's details as entered on the family/admission form (FR 8.1). {@code messageLanguage} is "EN" or "UR" (Roman

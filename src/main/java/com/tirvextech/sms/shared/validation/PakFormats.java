@@ -1,6 +1,6 @@
-package com.selectcode.sms.shared.validation;
+package com.tirvextech.sms.shared.validation;
 
-import com.selectcode.sms.shared.web.ApiException;
+import com.tirvextech.sms.shared.web.ApiException;
 import java.util.regex.Pattern;
 
 /**

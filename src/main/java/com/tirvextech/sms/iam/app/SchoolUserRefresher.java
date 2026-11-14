@@ -1,9 +1,9 @@
-package com.selectcode.sms.iam.app;
+package com.tirvextech.sms.iam.app;
 
-import com.selectcode.sms.iam.SchoolUserPrincipal;
-import com.selectcode.sms.iam.infra.RoleLinks;
-import com.selectcode.sms.shared.security.ActorPrincipal;
-import com.selectcode.sms.shared.security.PrincipalRefresher;
+import com.tirvextech.sms.iam.SchoolUserPrincipal;
+import com.tirvextech.sms.iam.infra.RoleLinks;
+import com.tirvextech.sms.shared.security.ActorPrincipal;
+import com.tirvextech.sms.shared.security.PrincipalRefresher;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -56,7 +56,7 @@ class SchoolUserRefresher implements PrincipalRefresher {
 		List<GrantedAuthority> authorities = new ArrayList<>();
 		authorities.add(new SimpleGrantedAuthority(SCHOOL_USER_AUTHORITY));
 		authorities.add(new SimpleGrantedAuthority(
-				com.selectcode.sms.shared.security.DataScope.valueOf((String) row.get("data_scope")).authority()));
+				com.tirvextech.sms.shared.security.DataScope.valueOf((String) row.get("data_scope")).authority()));
 		for (String permission : roleLinks.effectivePermissions(user.userId())) {
 			authorities.add(new SimpleGrantedAuthority(permission));
 		}

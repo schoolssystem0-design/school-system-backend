@@ -1,8 +1,8 @@
-package com.selectcode.sms.office.app;
+package com.tirvextech.sms.office.app;
 
-import com.selectcode.sms.settings.SettingKey;
-import com.selectcode.sms.settings.SettingsService;
-import com.selectcode.sms.shared.tenant.TenantContext;
+import com.tirvextech.sms.settings.SettingKey;
+import com.tirvextech.sms.settings.SettingsService;
+import com.tirvextech.sms.shared.tenant.TenantContext;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;

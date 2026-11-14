@@ -1,8 +1,8 @@
-package com.selectcode.sms.iam.api;
+package com.tirvextech.sms.iam.api;
 
-import com.selectcode.sms.iam.app.SecurityLogQueries;
-import com.selectcode.sms.shared.security.Permissions;
-import com.selectcode.sms.shared.web.PageResponse;
+import com.tirvextech.sms.iam.app.SecurityLogQueries;
+import com.tirvextech.sms.shared.security.Permissions;
+import com.tirvextech.sms.shared.web.PageResponse;
 import java.time.LocalDate;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;

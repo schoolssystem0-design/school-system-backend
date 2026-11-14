@@ -1,7 +1,7 @@
-package com.selectcode.sms.school.app;
+package com.tirvextech.sms.school.app;
 
-import com.selectcode.sms.school.infra.WorkingDayStore;
-import com.selectcode.sms.shared.year.WorkingDayCalendar;
+import com.tirvextech.sms.school.infra.WorkingDayStore;
+import com.tirvextech.sms.shared.year.WorkingDayCalendar;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.util.List;

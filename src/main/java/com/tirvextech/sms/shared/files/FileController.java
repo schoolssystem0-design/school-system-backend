@@ -1,7 +1,7 @@
-package com.selectcode.sms.shared.files;
+package com.tirvextech.sms.shared.files;
 
-import com.selectcode.sms.shared.security.AnyAuthenticated;
-import com.selectcode.sms.shared.web.ApiException;
+import com.tirvextech.sms.shared.security.AnyAuthenticated;
+import com.tirvextech.sms.shared.web.ApiException;
 import java.io.IOException;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;

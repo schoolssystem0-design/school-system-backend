@@ -1,6 +1,6 @@
-package com.selectcode.sms.iam.app;
+package com.tirvextech.sms.iam.app;
 
-import com.selectcode.sms.shared.web.PageResponse;
+import com.tirvextech.sms.shared.web.PageResponse;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;

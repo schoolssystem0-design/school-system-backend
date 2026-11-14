@@ -1,6 +1,6 @@
-package com.selectcode.sms.shared.messaging.smsgate;
+package com.tirvextech.sms.shared.messaging.smsgate;
 
-import com.selectcode.sms.shared.web.ApiException;
+import com.tirvextech.sms.shared.web.ApiException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;

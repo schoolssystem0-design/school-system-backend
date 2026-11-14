@@ -1,4 +1,4 @@
-package com.selectcode.sms.shared.messaging.smsgate;
+package com.tirvextech.sms.shared.messaging.smsgate;
 
 import java.io.IOException;
 import java.net.URI;

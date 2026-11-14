@@ -1,4 +1,4 @@
-package com.selectcode.sms.shared.tenant;
+package com.tirvextech.sms.shared.tenant;
 
 import javax.sql.DataSource;
 import org.hibernate.cfg.MultiTenancySettings;

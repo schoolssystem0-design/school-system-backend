@@ -1,4 +1,4 @@
-package com.selectcode.sms.shared.web;
+package com.tirvextech.sms.shared.web;
 
 import java.time.Clock;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;

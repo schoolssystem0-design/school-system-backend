@@ -1,4 +1,4 @@
-package com.selectcode.sms.shared.messaging;
+package com.tirvextech.sms.shared.messaging;
 
 import java.util.List;
 import org.slf4j.Logger;
@@ -85,7 +85,7 @@ class MessagingConfig {
 		}
 
 		/** Local development only: read emails/SMS the app would have sent (setup links, codes). */
-		@com.selectcode.sms.shared.security.PublicEndpoint
+		@com.tirvextech.sms.shared.security.PublicEndpoint
 		@GetMapping("/api/v1/dev/outbox")
 		List<DevOutbox.OutboxEntry> outbox() {
 			return outbox.entries();

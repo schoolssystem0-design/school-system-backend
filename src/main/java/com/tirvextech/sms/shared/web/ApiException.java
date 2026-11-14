@@ -1,4 +1,4 @@
-package com.selectcode.sms.shared.web;
+package com.tirvextech.sms.shared.web;
 
 import org.springframework.http.HttpStatus;
 

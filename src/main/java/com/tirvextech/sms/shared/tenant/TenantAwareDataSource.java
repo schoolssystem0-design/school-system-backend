@@ -1,4 +1,4 @@
-package com.selectcode.sms.shared.tenant;
+package com.tirvextech.sms.shared.tenant;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;

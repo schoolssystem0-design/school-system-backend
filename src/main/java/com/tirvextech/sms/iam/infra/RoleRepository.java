@@ -1,6 +1,6 @@
-package com.selectcode.sms.iam.infra;
+package com.tirvextech.sms.iam.infra;
 
-import com.selectcode.sms.iam.domain.Role;
+import com.tirvextech.sms.iam.domain.Role;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;

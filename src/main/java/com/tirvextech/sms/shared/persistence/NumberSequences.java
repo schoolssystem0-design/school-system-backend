@@ -1,6 +1,6 @@
-package com.selectcode.sms.shared.persistence;
+package com.tirvextech.sms.shared.persistence;
 
-import com.selectcode.sms.shared.tenant.TenantContext;
+import com.tirvextech.sms.shared.tenant.TenantContext;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;

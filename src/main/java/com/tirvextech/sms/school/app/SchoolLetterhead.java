@@ -1,10 +1,10 @@
-package com.selectcode.sms.school.app;
+package com.tirvextech.sms.school.app;
 
-import com.selectcode.sms.school.infra.SchoolProfileStore;
-import com.selectcode.sms.shared.files.FileService;
-import com.selectcode.sms.shared.pdf.Letterhead;
-import com.selectcode.sms.shared.pdf.LetterheadSource;
-import com.selectcode.sms.shared.web.ApiException;
+import com.tirvextech.sms.school.infra.SchoolProfileStore;
+import com.tirvextech.sms.shared.files.FileService;
+import com.tirvextech.sms.shared.pdf.Letterhead;
+import com.tirvextech.sms.shared.pdf.LetterheadSource;
+import com.tirvextech.sms.shared.web.ApiException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 

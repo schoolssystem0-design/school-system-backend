@@ -1,14 +1,14 @@
-package com.selectcode.sms.school.app;
+package com.tirvextech.sms.school.app;
 
-import com.selectcode.sms.school.domain.AcademicYear;
-import com.selectcode.sms.school.domain.CalendarDayOff;
-import com.selectcode.sms.school.infra.CalendarDayOffRepository;
-import com.selectcode.sms.school.infra.WorkingDayStore;
-import com.selectcode.sms.school.infra.WorkingDayStore.DayType;
-import com.selectcode.sms.shared.audit.AuditService;
-import com.selectcode.sms.shared.web.ApiException;
-import com.selectcode.sms.shared.year.AcademicYearLookup;
-import com.selectcode.sms.shared.year.YearContext;
+import com.tirvextech.sms.school.domain.AcademicYear;
+import com.tirvextech.sms.school.domain.CalendarDayOff;
+import com.tirvextech.sms.school.infra.CalendarDayOffRepository;
+import com.tirvextech.sms.school.infra.WorkingDayStore;
+import com.tirvextech.sms.school.infra.WorkingDayStore.DayType;
+import com.tirvextech.sms.shared.audit.AuditService;
+import com.tirvextech.sms.shared.web.ApiException;
+import com.tirvextech.sms.shared.year.AcademicYearLookup;
+import com.tirvextech.sms.shared.year.YearContext;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.EnumMap;

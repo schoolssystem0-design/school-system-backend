@@ -1,7 +1,7 @@
-package com.selectcode.sms.school.app;
+package com.tirvextech.sms.school.app;
 
-import com.selectcode.sms.shared.files.FileService;
-import com.selectcode.sms.shared.tenant.TenantContext;
+import com.tirvextech.sms.shared.files.FileService;
+import com.tirvextech.sms.shared.tenant.TenantContext;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;

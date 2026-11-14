@@ -1,15 +1,15 @@
-package com.selectcode.sms.academics.api;
+package com.tirvextech.sms.academics.api;
 
-import com.selectcode.sms.academics.app.AcademicsService;
-import com.selectcode.sms.academics.app.AcademicsService.ClassSubjectInput;
-import com.selectcode.sms.academics.app.AcademicsService.ClassSubjectView;
-import com.selectcode.sms.academics.app.AcademicsService.ClassView;
-import com.selectcode.sms.academics.app.AcademicsService.SectionView;
-import com.selectcode.sms.academics.app.AcademicsService.SubjectView;
-import com.selectcode.sms.academics.domain.ActiveStatus;
-import com.selectcode.sms.academics.domain.SchoolClass;
-import com.selectcode.sms.shared.security.Permissions;
-import com.selectcode.sms.shared.usage.UsageContributor;
+import com.tirvextech.sms.academics.app.AcademicsService;
+import com.tirvextech.sms.academics.app.AcademicsService.ClassSubjectInput;
+import com.tirvextech.sms.academics.app.AcademicsService.ClassSubjectView;
+import com.tirvextech.sms.academics.app.AcademicsService.ClassView;
+import com.tirvextech.sms.academics.app.AcademicsService.SectionView;
+import com.tirvextech.sms.academics.app.AcademicsService.SubjectView;
+import com.tirvextech.sms.academics.domain.ActiveStatus;
+import com.tirvextech.sms.academics.domain.SchoolClass;
+import com.tirvextech.sms.shared.security.Permissions;
+import com.tirvextech.sms.shared.usage.UsageContributor;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

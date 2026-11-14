@@ -1,22 +1,22 @@
-package com.selectcode.sms.students.api;
+package com.tirvextech.sms.students.api;
 
-import com.selectcode.sms.families.FamilyDetails;
-import com.selectcode.sms.shared.pdf.CertificateRegister;
-import com.selectcode.sms.shared.security.Permissions;
-import com.selectcode.sms.shared.web.ApiException;
-import com.selectcode.sms.shared.web.PageResponse;
-import com.selectcode.sms.shared.year.YearContext;
-import com.selectcode.sms.students.StudentService;
-import com.selectcode.sms.students.StudentService.Admission;
-import com.selectcode.sms.students.StudentService.StudentBulkValue;
-import com.selectcode.sms.students.StudentService.RegisterRow;
-import com.selectcode.sms.students.StudentService.Strength;
-import com.selectcode.sms.students.StudentService.StudentRow;
-import com.selectcode.sms.students.StudentService.StudentView;
-import com.selectcode.sms.students.app.PromotionService;
-import com.selectcode.sms.students.app.StudentPrintService;
-import com.selectcode.sms.students.app.StudentRecordsService;
-import com.selectcode.sms.students.infra.Enrolments;
+import com.tirvextech.sms.families.FamilyDetails;
+import com.tirvextech.sms.shared.pdf.CertificateRegister;
+import com.tirvextech.sms.shared.security.Permissions;
+import com.tirvextech.sms.shared.web.ApiException;
+import com.tirvextech.sms.shared.web.PageResponse;
+import com.tirvextech.sms.shared.year.YearContext;
+import com.tirvextech.sms.students.StudentService;
+import com.tirvextech.sms.students.StudentService.Admission;
+import com.tirvextech.sms.students.StudentService.StudentBulkValue;
+import com.tirvextech.sms.students.StudentService.RegisterRow;
+import com.tirvextech.sms.students.StudentService.Strength;
+import com.tirvextech.sms.students.StudentService.StudentRow;
+import com.tirvextech.sms.students.StudentService.StudentView;
+import com.tirvextech.sms.students.app.PromotionService;
+import com.tirvextech.sms.students.app.StudentPrintService;
+import com.tirvextech.sms.students.app.StudentRecordsService;
+import com.tirvextech.sms.students.infra.Enrolments;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -61,8 +61,8 @@ class StudentController {
 			@Size(max = 200) String previousSchool, @Size(max = 40) String studyGroup, Long photoFileId,
 			@Size(max = 1000) String notes) {
 
-		com.selectcode.sms.students.StudentDetails toDetails() {
-			return new com.selectcode.sms.students.StudentDetails(name, gender, dob, placeOfBirth, bFormNo, religion, nationality, phone, address,
+		com.tirvextech.sms.students.StudentDetails toDetails() {
+			return new com.tirvextech.sms.students.StudentDetails(name, gender, dob, placeOfBirth, bFormNo, religion, nationality, phone, address,
 					previousSchool, studyGroup, photoFileId, notes);
 		}
 	}
@@ -147,11 +147,11 @@ class StudentController {
 
 	private final YearContext yearContext;
 
-	private final com.selectcode.sms.students.app.StudentImport importer;
+	private final com.tirvextech.sms.students.app.StudentImport importer;
 
 	StudentController(StudentService students, StudentRecordsService records, PromotionService promotions,
 			StudentPrintService printing, CertificateRegister certificates, YearContext yearContext,
-			com.selectcode.sms.students.app.StudentImport importer) {
+			com.tirvextech.sms.students.app.StudentImport importer) {
 		this.importer = importer;
 		this.students = students;
 		this.records = records;
@@ -212,7 +212,7 @@ class StudentController {
 	/** Checks a filled-in sheet and shows every row; admits nobody. */
 	@PreAuthorize(ENROL)
 	@PostMapping(value = "/import/check", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	com.selectcode.sms.students.app.StudentImport.ImportCheck checkImport(
+	com.tirvextech.sms.students.app.StudentImport.ImportCheck checkImport(
 			@RequestParam("file") org.springframework.web.multipart.MultipartFile file, @RequestParam long sectionId,
 			@RequestParam java.time.LocalDate admissionDate) throws java.io.IOException {
 		try (var in = importFile(file)) {
@@ -224,7 +224,7 @@ class StudentController {
 	@PreAuthorize(ENROL)
 	@PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	@ResponseStatus(HttpStatus.CREATED)
-	com.selectcode.sms.students.app.StudentImport.ImportResult importStudents(
+	com.tirvextech.sms.students.app.StudentImport.ImportResult importStudents(
 			@RequestParam("file") org.springframework.web.multipart.MultipartFile file, @RequestParam long sectionId,
 			@RequestParam java.time.LocalDate admissionDate) throws java.io.IOException {
 		try (var in = importFile(file)) {

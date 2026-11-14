@@ -1,8 +1,8 @@
-package com.selectcode.sms;
+package com.tirvextech.sms;
 
-import com.selectcode.sms.platform.app.SchoolManagementService;
-import com.selectcode.sms.platform.app.SchoolManagementService.NewSchool;
-import com.selectcode.sms.support.TestDatabase;
+import com.tirvextech.sms.platform.app.SchoolManagementService;
+import com.tirvextech.sms.platform.app.SchoolManagementService.NewSchool;
+import com.tirvextech.sms.support.TestDatabase;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -10,7 +10,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 /**
  * Runs the API locally on an embedded PostgreSQL (no Docker or installed database needed):
- * {@code mvn spring-boot:test-run -Dspring-boot.run.main-class=com.selectcode.sms.LocalDevApplication}.
+ * {@code mvn spring-boot:test-run -Dspring-boot.run.main-class=com.tirvextech.sms.LocalDevApplication}.
  *
  * <p>Seeds a super admin and two demo schools created through the real provisioning code. Data is discarded when the
  * process stops. Emails (setup links, step-up codes) appear at http://localhost:8080/api/v1/dev/outbox.

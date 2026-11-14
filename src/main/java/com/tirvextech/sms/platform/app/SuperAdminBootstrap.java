@@ -1,7 +1,7 @@
-package com.selectcode.sms.platform.app;
+package com.tirvextech.sms.platform.app;
 
-import com.selectcode.sms.platform.domain.PlatformUser;
-import com.selectcode.sms.platform.infra.PlatformUserRepository;
+import com.tirvextech.sms.platform.domain.PlatformUser;
+import com.tirvextech.sms.platform.infra.PlatformUserRepository;
 import java.time.Clock;
 import java.util.Arrays;
 import java.util.Optional;

@@ -1,4 +1,4 @@
-package com.selectcode.sms.shared.persistence;
+package com.tirvextech.sms.shared.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

@@ -1,4 +1,4 @@
-package com.selectcode.sms.shared.security;
+package com.tirvextech.sms.shared.security;
 
 import jakarta.servlet.http.HttpSession;
 import java.io.Serializable;
@@ -8,7 +8,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.HexFormat;
 import org.springframework.http.HttpStatus;
-import com.selectcode.sms.shared.web.ApiException;
+import com.tirvextech.sms.shared.web.ApiException;
 
 /**
  * Step-up verification state, kept in the server-side session: a pending one-time code (hashed) and, once verified,

@@ -1,6 +1,6 @@
-package com.selectcode.sms.students.infra;
+package com.tirvextech.sms.students.infra;
 
-import com.selectcode.sms.students.domain.Student;
+import com.tirvextech.sms.students.domain.Student;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

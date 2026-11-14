@@ -1,14 +1,14 @@
-package com.selectcode.sms.platform;
+package com.tirvextech.sms.platform;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.selectcode.sms.shared.messaging.DevOutbox;
-import com.selectcode.sms.support.ApiClient;
-import com.selectcode.sms.support.IntegrationTest;
-import com.selectcode.sms.support.TestData;
-import com.selectcode.sms.support.TestDatabase;
+import com.tirvextech.sms.shared.messaging.DevOutbox;
+import com.tirvextech.sms.support.ApiClient;
+import com.tirvextech.sms.support.IntegrationTest;
+import com.tirvextech.sms.support.TestData;
+import com.tirvextech.sms.support.TestDatabase;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
@@ -96,7 +96,7 @@ class TrialIT extends IntegrationTest {
 		// No setup link in the answer: only the email can be used to choose the password
 		assertThat(r.andReturn().getResponse().getContentAsString()).doesNotContain("token");
 		assertThat(outbox.entries()).anyMatch(e -> e.message().recipient().equals(email)
-				&& e.message().subject().equals("Your free trial of the school system") && e.message().body().contains(code));
+				&& e.message().subject().equals("Your free trial of Tirvex Tech School Management System") && e.message().body().contains(code));
 
 		setPassword(email, "trial-password-1");
 		ApiClient head = new ApiClient(mvc);

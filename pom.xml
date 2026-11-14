@@ -9,7 +9,7 @@
 		<relativePath/>
 	</parent>
 
-	<groupId>com.selectcode</groupId>
+	<groupId>com.tirvextech</groupId>
 	<artifactId>sms-backend</artifactId>
 	<version>0.1.0-SNAPSHOT</version>
 	<name>sms-backend</name>

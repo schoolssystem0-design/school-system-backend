@@ -1,11 +1,11 @@
-package com.selectcode.sms.exams.app;
+package com.tirvextech.sms.exams.app;
 
-import com.selectcode.sms.communication.MessageTemplates;
-import com.selectcode.sms.exams.app.TestMarksService.TestMarkRow;
-import com.selectcode.sms.exams.app.TestMarksService.TestSheet;
-import com.selectcode.sms.shared.audit.AuditService;
-import com.selectcode.sms.shared.messaging.MessageOutbox;
-import com.selectcode.sms.shared.web.ApiException;
+import com.tirvextech.sms.communication.MessageTemplates;
+import com.tirvextech.sms.exams.app.TestMarksService.TestMarkRow;
+import com.tirvextech.sms.exams.app.TestMarksService.TestSheet;
+import com.tirvextech.sms.shared.audit.AuditService;
+import com.tirvextech.sms.shared.messaging.MessageOutbox;
+import com.tirvextech.sms.shared.web.ApiException;
 import java.util.List;
 import java.util.Map;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -47,7 +47,7 @@ public class TestMarkMessages {
 		if (sheet.rows().stream().noneMatch(r -> r.absent() || r.obtained() != null)) {
 			throw ApiException.businessRule("NO_MARKS", "Enter the marks before sending them to families");
 		}
-		String date = com.selectcode.sms.shared.pdf.PdfKit.date(sheet.test().testDate());
+		String date = com.tirvextech.sms.shared.pdf.PdfKit.date(sheet.test().testDate());
 		int queued = 0;
 		int already = 0;
 		int noPhone = 0;

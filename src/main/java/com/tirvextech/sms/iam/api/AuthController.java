@@ -1,17 +1,17 @@
-package com.selectcode.sms.iam.api;
+package com.tirvextech.sms.iam.api;
 
-import com.selectcode.sms.iam.SchoolUserPrincipal;
-import com.selectcode.sms.iam.app.AccountService;
-import com.selectcode.sms.iam.app.SignInService;
-import com.selectcode.sms.iam.app.SignInService.SignInAttempt;
-import com.selectcode.sms.iam.app.StepUpService;
-import com.selectcode.sms.shared.security.ActorPrincipal;
-import com.selectcode.sms.shared.security.AnyAuthenticated;
-import com.selectcode.sms.shared.security.CurrentActor;
-import com.selectcode.sms.shared.security.Permissions;
-import com.selectcode.sms.shared.security.PublicEndpoint;
-import com.selectcode.sms.shared.security.RequestPrincipalFilter;
-import com.selectcode.sms.shared.security.StepUp;
+import com.tirvextech.sms.iam.SchoolUserPrincipal;
+import com.tirvextech.sms.iam.app.AccountService;
+import com.tirvextech.sms.iam.app.SignInService;
+import com.tirvextech.sms.iam.app.SignInService.SignInAttempt;
+import com.tirvextech.sms.iam.app.StepUpService;
+import com.tirvextech.sms.shared.security.ActorPrincipal;
+import com.tirvextech.sms.shared.security.AnyAuthenticated;
+import com.tirvextech.sms.shared.security.CurrentActor;
+import com.tirvextech.sms.shared.security.Permissions;
+import com.tirvextech.sms.shared.security.PublicEndpoint;
+import com.tirvextech.sms.shared.security.RequestPrincipalFilter;
+import com.tirvextech.sms.shared.security.StepUp;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -88,15 +88,15 @@ class AuthController {
 
 	private final SecurityContextRepository securityContextRepository;
 
-	private final com.selectcode.sms.iam.app.ProfileImages images;
+	private final com.tirvextech.sms.iam.app.ProfileImages images;
 
-	private final com.selectcode.sms.iam.app.UserAdminService userAdmin;
+	private final com.tirvextech.sms.iam.app.UserAdminService userAdmin;
 
-	private final com.selectcode.sms.shared.tenant.SchoolLookup schools;
+	private final com.tirvextech.sms.shared.tenant.SchoolLookup schools;
 
 	AuthController(SignInService signInService, AccountService accounts, StepUpService stepUp,
-			SecurityContextRepository securityContextRepository, com.selectcode.sms.iam.app.ProfileImages images,
-			com.selectcode.sms.iam.app.UserAdminService userAdmin, com.selectcode.sms.shared.tenant.SchoolLookup schools) {
+			SecurityContextRepository securityContextRepository, com.tirvextech.sms.iam.app.ProfileImages images,
+			com.tirvextech.sms.iam.app.UserAdminService userAdmin, com.tirvextech.sms.shared.tenant.SchoolLookup schools) {
 		this.schools = schools;
 		this.images = images;
 		this.userAdmin = userAdmin;
@@ -147,7 +147,7 @@ class AuthController {
 				: new SchoolInfo(actor.tenantSchoolId(), actor.schoolCode(), actor.schoolName(),
 						images.schoolLogo(actor.tenantSchoolId()),
 						schools.findById(actor.tenantSchoolId()).map(s -> s.trialEndsAt()).orElse(null));
-		Long photo = actor.actorType() == com.selectcode.sms.shared.security.ActorType.USER
+		Long photo = actor.actorType() == com.tirvextech.sms.shared.security.ActorType.USER
 				? images.userPhoto(actor.actorId()) : null;
 		return new MeResponse(actor.actorType().name(), actor.actorId(), actor.displayName(), actor.loginName(), school,
 				CurrentActor.isSuperAdmin(), permissions,

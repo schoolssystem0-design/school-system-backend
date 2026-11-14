@@ -1,13 +1,13 @@
-package com.selectcode.sms.students.app;
+package com.tirvextech.sms.students.app;
 
-import com.selectcode.sms.academics.AcademicStructure;
-import com.selectcode.sms.shared.audit.AuditService;
-import com.selectcode.sms.shared.web.ApiException;
-import com.selectcode.sms.shared.year.AcademicYearLookup;
-import com.selectcode.sms.shared.year.AcademicYearLookup.YearRef;
-import com.selectcode.sms.shared.year.YearContext;
-import com.selectcode.sms.students.StudentService;
-import com.selectcode.sms.students.infra.Enrolments;
+import com.tirvextech.sms.academics.AcademicStructure;
+import com.tirvextech.sms.shared.audit.AuditService;
+import com.tirvextech.sms.shared.web.ApiException;
+import com.tirvextech.sms.shared.year.AcademicYearLookup;
+import com.tirvextech.sms.shared.year.AcademicYearLookup.YearRef;
+import com.tirvextech.sms.shared.year.YearContext;
+import com.tirvextech.sms.students.StudentService;
+import com.tirvextech.sms.students.infra.Enrolments;
 import java.sql.Date;
 import java.util.HashMap;
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.selectcode.sms.shared.messaging;
+package com.tirvextech.sms.shared.messaging;
 
 /** A message to one recipient. Bodies may contain one-time codes: never log them. */
 public record OutgoingMessage(Channel channel, String recipient, String subject, String body, String sender) {

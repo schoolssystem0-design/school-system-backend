@@ -1,4 +1,4 @@
-package com.selectcode.sms.shared.security;
+package com.tirvextech.sms.shared.security;
 
 import java.time.Clock;
 import org.springframework.context.annotation.Configuration;

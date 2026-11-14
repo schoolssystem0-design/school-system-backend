@@ -1,14 +1,14 @@
-package com.selectcode.sms.attendance.app;
+package com.tirvextech.sms.attendance.app;
 
-import com.selectcode.sms.settings.SettingKey;
-import com.selectcode.sms.settings.SettingsService;
-import com.selectcode.sms.shared.attendance.StudentAbsences;
-import com.selectcode.sms.shared.money.MoneyInput;
-import com.selectcode.sms.shared.pdf.Letterhead;
-import com.selectcode.sms.shared.pdf.LetterheadSource;
-import com.selectcode.sms.shared.pdf.PdfKit;
-import com.selectcode.sms.shared.year.AcademicYearLookup.YearRef;
-import com.selectcode.sms.shared.year.WorkingDayCalendar;
+import com.tirvextech.sms.settings.SettingKey;
+import com.tirvextech.sms.settings.SettingsService;
+import com.tirvextech.sms.shared.attendance.StudentAbsences;
+import com.tirvextech.sms.shared.money.MoneyInput;
+import com.tirvextech.sms.shared.pdf.Letterhead;
+import com.tirvextech.sms.shared.pdf.LetterheadSource;
+import com.tirvextech.sms.shared.pdf.PdfKit;
+import com.tirvextech.sms.shared.year.AcademicYearLookup.YearRef;
+import com.tirvextech.sms.shared.year.WorkingDayCalendar;
 import java.awt.Color;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -40,8 +40,8 @@ import org.springframework.transaction.annotation.Transactional;
  * (they appear in the missing-register list instead). A student is counted only for the days they were in the section.
  */
 @Service
-public class AttendanceReports implements StudentAbsences, com.selectcode.sms.shared.attendance.AttendancePercent,
-		com.selectcode.sms.shared.attendance.RepeatedAbsenceCount {
+public class AttendanceReports implements StudentAbsences, com.tirvextech.sms.shared.attendance.AttendancePercent,
+		com.tirvextech.sms.shared.attendance.RepeatedAbsenceCount {
 
 	public record StudentFigures(long studentId, String grNo, String name, String sectionLabel, int markedDays,
 			int present, int late, int halfDays, int absent, int leave, String percent) {
@@ -87,7 +87,7 @@ public class AttendanceReports implements StudentAbsences, com.selectcode.sms.sh
 
 	/** D-09 percentage, or null when nothing countable was marked. */
 	public static String percent(int present, int late, int halfDays, int markedDays, int leave) {
-		return com.selectcode.sms.shared.attendance.AttendancePercent.of(present, late, halfDays, markedDays, leave);
+		return com.tirvextech.sms.shared.attendance.AttendancePercent.of(present, late, halfDays, markedDays, leave);
 	}
 
 	private Array dates(List<LocalDate> days) {

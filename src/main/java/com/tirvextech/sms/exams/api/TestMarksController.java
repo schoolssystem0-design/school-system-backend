@@ -1,15 +1,15 @@
-package com.selectcode.sms.exams.api;
+package com.tirvextech.sms.exams.api;
 
-import com.selectcode.sms.exams.app.TestMarkMessages;
-import com.selectcode.sms.exams.app.TestMarkMessages.TestMarksSmsReport;
-import com.selectcode.sms.exams.app.TestMarksService;
-import com.selectcode.sms.exams.app.TestMarksService.ClassTestInput;
-import com.selectcode.sms.exams.app.TestMarksService.ClassTestView;
-import com.selectcode.sms.exams.app.TestMarksService.OverallRow;
-import com.selectcode.sms.exams.app.TestMarksService.StudentTestRow;
-import com.selectcode.sms.exams.app.TestMarksService.TestMarkEntry;
-import com.selectcode.sms.exams.app.TestMarksService.TestSheet;
-import com.selectcode.sms.shared.security.Permissions;
+import com.tirvextech.sms.exams.app.TestMarkMessages;
+import com.tirvextech.sms.exams.app.TestMarkMessages.TestMarksSmsReport;
+import com.tirvextech.sms.exams.app.TestMarksService;
+import com.tirvextech.sms.exams.app.TestMarksService.ClassTestInput;
+import com.tirvextech.sms.exams.app.TestMarksService.ClassTestView;
+import com.tirvextech.sms.exams.app.TestMarksService.OverallRow;
+import com.tirvextech.sms.exams.app.TestMarksService.StudentTestRow;
+import com.tirvextech.sms.exams.app.TestMarksService.TestMarkEntry;
+import com.tirvextech.sms.exams.app.TestMarksService.TestSheet;
+import com.tirvextech.sms.shared.security.Permissions;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

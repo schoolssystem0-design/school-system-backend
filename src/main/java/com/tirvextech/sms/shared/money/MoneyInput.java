@@ -1,6 +1,6 @@
-package com.selectcode.sms.shared.money;
+package com.tirvextech.sms.shared.money;
 
-import com.selectcode.sms.shared.web.ApiException;
+import com.tirvextech.sms.shared.web.ApiException;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;

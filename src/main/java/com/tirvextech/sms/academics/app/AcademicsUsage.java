@@ -1,8 +1,8 @@
-package com.selectcode.sms.academics.app;
+package com.tirvextech.sms.academics.app;
 
-import com.selectcode.sms.academics.infra.ClassSubjectRepository;
-import com.selectcode.sms.academics.infra.SectionRepository;
-import com.selectcode.sms.shared.usage.UsageContributor;
+import com.tirvextech.sms.academics.infra.ClassSubjectRepository;
+import com.tirvextech.sms.academics.infra.SectionRepository;
+import com.tirvextech.sms.shared.usage.UsageContributor;
 import java.util.List;
 import org.springframework.stereotype.Component;
 

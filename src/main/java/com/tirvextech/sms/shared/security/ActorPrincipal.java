@@ -1,6 +1,6 @@
-package com.selectcode.sms.shared.security;
+package com.tirvextech.sms.shared.security;
 
-import com.selectcode.sms.shared.tenant.TenantPrincipal;
+import com.tirvextech.sms.shared.tenant.TenantPrincipal;
 
 /** Common view of any signed-in principal (school user or super admin), stored in the server-side session. */
 public interface ActorPrincipal extends TenantPrincipal {

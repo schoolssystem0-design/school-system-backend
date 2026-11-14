@@ -1,14 +1,14 @@
-package com.selectcode.sms.platform.app;
+package com.tirvextech.sms.platform.app;
 
-import com.selectcode.sms.platform.app.SchoolManagementService.NewSchool;
-import com.selectcode.sms.platform.app.SchoolManagementService.SchoolCreated;
-import com.selectcode.sms.shared.audit.AuditService;
-import com.selectcode.sms.shared.messaging.EmailSetup;
-import com.selectcode.sms.shared.messaging.MessageSender;
-import com.selectcode.sms.shared.messaging.OutgoingMessage;
-import com.selectcode.sms.shared.pdf.PdfKit;
-import com.selectcode.sms.shared.web.ApiException;
-import com.selectcode.sms.shared.web.RateLimiter;
+import com.tirvextech.sms.platform.app.SchoolManagementService.NewSchool;
+import com.tirvextech.sms.platform.app.SchoolManagementService.SchoolCreated;
+import com.tirvextech.sms.shared.audit.AuditService;
+import com.tirvextech.sms.shared.messaging.EmailSetup;
+import com.tirvextech.sms.shared.messaging.MessageSender;
+import com.tirvextech.sms.shared.messaging.OutgoingMessage;
+import com.tirvextech.sms.shared.pdf.PdfKit;
+import com.tirvextech.sms.shared.web.ApiException;
+import com.tirvextech.sms.shared.web.RateLimiter;
 import java.net.InetAddress;
 import java.time.Clock;
 import java.time.Duration;
@@ -118,7 +118,7 @@ public class TrialService {
 		audit.recordPlatform("TRIAL_STARTED", created.schoolId(),
 				Map.of("code", created.code(), "name", created.name(), "email", address, "ip", ip, "days", days));
 		String username = created.adminSetup().username();
-		messages.send(OutgoingMessage.email(address, "Your free trial of the school system", """
+		messages.send(OutgoingMessage.email(address, "Your free trial of Tirvex Tech School Management System", """
 				Welcome! %s is ready for a %d-day free trial, with every feature.
 
 				School code: %s
@@ -127,6 +127,8 @@ public class TrialService {
 
 				We have sent you a separate email with a link to choose your password. Then sign in with the school code
 				and username above. Your data is kept when the trial ends; contact us to continue.
+
+				Tirvex Tech
 				""".formatted(created.name(), days, created.code(), username,
 				PdfKit.date(ends.atZone(ZoneId.of("Asia/Karachi")).toLocalDate()))));
 		return new TrialStarted(created.code(), username, address, ends);

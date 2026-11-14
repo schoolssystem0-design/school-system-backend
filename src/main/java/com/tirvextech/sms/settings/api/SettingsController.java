@@ -1,8 +1,8 @@
-package com.selectcode.sms.settings.api;
+package com.tirvextech.sms.settings.api;
 
-import com.selectcode.sms.settings.SettingsService;
-import com.selectcode.sms.shared.security.Permissions;
-import com.selectcode.sms.shared.security.RequiresStepUp;
+import com.tirvextech.sms.settings.SettingsService;
+import com.tirvextech.sms.shared.security.Permissions;
+import com.tirvextech.sms.shared.security.RequiresStepUp;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

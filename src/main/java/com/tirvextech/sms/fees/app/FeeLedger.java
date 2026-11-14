@@ -1,10 +1,10 @@
-package com.selectcode.sms.fees.app;
+package com.tirvextech.sms.fees.app;
 
-import com.selectcode.sms.shared.accounting.JournalWriter;
-import com.selectcode.sms.shared.events.SchoolCreatedEvent;
-import com.selectcode.sms.shared.security.CurrentActor;
-import com.selectcode.sms.shared.tenant.TenantContext;
-import com.selectcode.sms.shared.web.ApiException;
+import com.tirvextech.sms.shared.accounting.JournalWriter;
+import com.tirvextech.sms.shared.events.SchoolCreatedEvent;
+import com.tirvextech.sms.shared.security.CurrentActor;
+import com.tirvextech.sms.shared.tenant.TenantContext;
+import com.tirvextech.sms.shared.web.ApiException;
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.time.LocalDate;

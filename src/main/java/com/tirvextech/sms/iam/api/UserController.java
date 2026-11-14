@@ -1,13 +1,13 @@
-package com.selectcode.sms.iam.api;
+package com.tirvextech.sms.iam.api;
 
-import com.selectcode.sms.iam.app.UserAdminService;
-import com.selectcode.sms.iam.app.UserAdminService.TemporaryPassword;
-import com.selectcode.sms.iam.app.UserAdminService.UserInput;
-import com.selectcode.sms.iam.app.UserAdminService.UserView;
-import com.selectcode.sms.iam.domain.AppUser;
-import com.selectcode.sms.shared.security.Permissions;
-import com.selectcode.sms.shared.security.RequiresStepUp;
-import com.selectcode.sms.shared.web.PageResponse;
+import com.tirvextech.sms.iam.app.UserAdminService;
+import com.tirvextech.sms.iam.app.UserAdminService.TemporaryPassword;
+import com.tirvextech.sms.iam.app.UserAdminService.UserInput;
+import com.tirvextech.sms.iam.app.UserAdminService.UserView;
+import com.tirvextech.sms.iam.domain.AppUser;
+import com.tirvextech.sms.shared.security.Permissions;
+import com.tirvextech.sms.shared.security.RequiresStepUp;
+import com.tirvextech.sms.shared.web.PageResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -33,11 +33,11 @@ class UserController {
 
 	record CreateUserRequest(@NotBlank @Size(max = 60) String username, @NotBlank @Size(max = 200) String displayName,
 			@Email @Size(max = 254) String email, @Size(max = 30) String phone, @NotEmpty List<Long> roleIds,
-			com.selectcode.sms.shared.security.DataScope dataScope) {
+			com.tirvextech.sms.shared.security.DataScope dataScope) {
 	}
 
 	record UpdateUserRequest(@NotBlank @Size(max = 200) String displayName, @Email @Size(max = 254) String email,
-			@Size(max = 30) String phone, @NotEmpty List<Long> roleIds, com.selectcode.sms.shared.security.DataScope dataScope, long version) {
+			@Size(max = 30) String phone, @NotEmpty List<Long> roleIds, com.tirvextech.sms.shared.security.DataScope dataScope, long version) {
 	}
 
 	record ReasonRequest(@NotBlank @Size(max = 500) String reason) {

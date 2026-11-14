@@ -1,6 +1,6 @@
-package com.selectcode.sms.school.domain;
+package com.tirvextech.sms.school.domain;
 
-import com.selectcode.sms.shared.persistence.TenantScopedEntity;
+import com.tirvextech.sms.shared.persistence.TenantScopedEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

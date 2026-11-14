@@ -1,9 +1,9 @@
-package com.selectcode.sms.shared.audit;
+package com.tirvextech.sms.shared.audit;
 
-import com.selectcode.sms.shared.security.ActorPrincipal;
-import com.selectcode.sms.shared.security.ActorType;
-import com.selectcode.sms.shared.security.CurrentActor;
-import com.selectcode.sms.shared.tenant.TenantContext;
+import com.tirvextech.sms.shared.security.ActorPrincipal;
+import com.tirvextech.sms.shared.security.ActorType;
+import com.tirvextech.sms.shared.security.CurrentActor;
+import com.tirvextech.sms.shared.tenant.TenantContext;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
 import org.springframework.jdbc.core.JdbcTemplate;

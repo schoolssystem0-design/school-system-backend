@@ -1,6 +1,6 @@
-package com.selectcode.sms.academics;
+package com.tirvextech.sms.academics;
 
-import com.selectcode.sms.shared.web.ApiException;
+import com.tirvextech.sms.shared.web.ApiException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;

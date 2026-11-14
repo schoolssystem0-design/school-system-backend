@@ -1,4 +1,4 @@
-package com.selectcode.sms.support;
+package com.tirvextech.sms.support;
 
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -39,8 +39,8 @@ public final class TestData {
 		jdbc.update("""
 				insert into fee_head (school_id, name, frequency, display_order, system_code)
 				values (?, 'Late fee', 'CUSTOM', 1000, 'LATE_FEE'), (?, 'Absent fine', 'CUSTOM', 1001, 'ABSENT_FINE')""", id, id);
-		com.selectcode.sms.accounts.app.AccountsSetupService.seed(jdbc, id);
-		com.selectcode.sms.exams.app.ExamSetupService.seed(jdbc, id);
+		com.tirvextech.sms.accounts.app.AccountsSetupService.seed(jdbc, id);
+		com.tirvextech.sms.exams.app.ExamSetupService.seed(jdbc, id);
 		return new SeededSchool(id, code);
 	}
 

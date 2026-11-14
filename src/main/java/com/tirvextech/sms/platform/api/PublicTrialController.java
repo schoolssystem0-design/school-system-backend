@@ -1,9 +1,9 @@
-package com.selectcode.sms.platform.api;
+package com.tirvextech.sms.platform.api;
 
-import com.selectcode.sms.platform.app.TrialService;
-import com.selectcode.sms.platform.app.TrialService.TrialRequest;
-import com.selectcode.sms.platform.app.TrialService.TrialStarted;
-import com.selectcode.sms.shared.security.PublicEndpoint;
+import com.tirvextech.sms.platform.app.TrialService;
+import com.tirvextech.sms.platform.app.TrialService.TrialRequest;
+import com.tirvextech.sms.platform.app.TrialService.TrialStarted;
+import com.tirvextech.sms.shared.security.PublicEndpoint;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -45,7 +45,7 @@ class PublicTrialController {
 	TrialStarted start(@Valid @RequestBody TrialSignupRequest body, HttpServletRequest request) {
 		if (body.website() != null && !body.website().isBlank()) {
 			// A hidden field people never see: only bots fill it in
-			throw com.selectcode.sms.shared.web.ApiException.businessRule("TRIAL_REFUSED", "The trial could not be started");
+			throw com.tirvextech.sms.shared.web.ApiException.businessRule("TRIAL_REFUSED", "The trial could not be started");
 		}
 		return trials.start(new TrialRequest(body.schoolName(), body.schoolCode(), body.adminName(), body.username(),
 				body.email()), request.getRemoteAddr());

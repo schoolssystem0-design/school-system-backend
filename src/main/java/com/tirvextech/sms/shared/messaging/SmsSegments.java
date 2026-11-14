@@ -1,4 +1,4 @@
-package com.selectcode.sms.shared.messaging;
+package com.tirvextech.sms.shared.messaging;
 
 /**
  * How many SMS parts a text costs (QA-COM-002). GSM-7: 160 characters, or 153 per part when split; a few symbols count

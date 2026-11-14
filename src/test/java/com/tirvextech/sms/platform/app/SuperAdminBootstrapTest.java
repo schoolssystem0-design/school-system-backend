@@ -1,4 +1,4 @@
-package com.selectcode.sms.platform.app;
+package com.tirvextech.sms.platform.app;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -7,8 +7,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.selectcode.sms.platform.domain.PlatformUser;
-import com.selectcode.sms.platform.infra.PlatformUserRepository;
+import com.tirvextech.sms.platform.domain.PlatformUser;
+import com.tirvextech.sms.platform.infra.PlatformUserRepository;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;

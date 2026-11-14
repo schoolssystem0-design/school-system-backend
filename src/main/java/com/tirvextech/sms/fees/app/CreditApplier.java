@@ -1,8 +1,8 @@
-package com.selectcode.sms.fees.app;
+package com.tirvextech.sms.fees.app;
 
-import com.selectcode.sms.fees.app.OpenLines.Credit;
-import com.selectcode.sms.fees.app.OpenLines.OpenLine;
-import com.selectcode.sms.shared.tenant.TenantContext;
+import com.tirvextech.sms.fees.app.OpenLines.Credit;
+import com.tirvextech.sms.fees.app.OpenLines.OpenLine;
+import com.tirvextech.sms.shared.tenant.TenantContext;
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.time.LocalDate;

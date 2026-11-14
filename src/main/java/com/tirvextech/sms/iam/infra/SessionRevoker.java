@@ -1,6 +1,6 @@
-package com.selectcode.sms.iam.infra;
+package com.tirvextech.sms.iam.infra;
 
-import com.selectcode.sms.iam.SchoolUserPrincipal;
+import com.tirvextech.sms.iam.SchoolUserPrincipal;
 import org.springframework.session.FindByIndexNameSessionRepository;
 import org.springframework.session.Session;
 import org.springframework.stereotype.Component;

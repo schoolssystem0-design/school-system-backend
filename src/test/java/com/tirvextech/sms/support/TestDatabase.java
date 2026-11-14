@@ -1,4 +1,4 @@
-package com.selectcode.sms.support;
+package com.tirvextech.sms.support;
 
 import io.zonky.test.db.postgres.embedded.EmbeddedPostgres;
 import java.io.IOException;

@@ -1,9 +1,9 @@
-package com.selectcode.sms;
+package com.tirvextech.sms;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.fields;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
-import com.selectcode.sms.shared.persistence.TenantScopedEntity;
+import com.tirvextech.sms.shared.persistence.TenantScopedEntity;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
@@ -19,7 +19,7 @@ class ArchitectureTest {
 	@BeforeAll
 	static void importClasses() {
 		classes = new ClassFileImporter().withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-			.importPackages("com.selectcode.sms");
+			.importPackages("com.tirvextech.sms");
 	}
 
 	@Test
@@ -48,7 +48,7 @@ class ArchitectureTest {
 			.that()
 			.areAnnotatedWith(Entity.class)
 			.and()
-			.resideOutsideOfPackage("com.selectcode.sms.platform..")
+			.resideOutsideOfPackage("com.tirvextech.sms.platform..")
 			.should()
 			.beAssignableTo(TenantScopedEntity.class)
 			.check(classes);
@@ -74,9 +74,9 @@ class ArchitectureTest {
 			.should()
 			.beAnnotatedWith(org.springframework.security.access.prepost.PreAuthorize.class)
 			.orShould()
-			.beAnnotatedWith(com.selectcode.sms.shared.security.AnyAuthenticated.class)
+			.beAnnotatedWith(com.tirvextech.sms.shared.security.AnyAuthenticated.class)
 			.orShould()
-			.beAnnotatedWith(com.selectcode.sms.shared.security.PublicEndpoint.class)
+			.beAnnotatedWith(com.tirvextech.sms.shared.security.PublicEndpoint.class)
 			.check(classes);
 	}
 
@@ -85,7 +85,7 @@ class ArchitectureTest {
 		noClasses().that()
 			.resideInAPackage("..api..")
 			.should()
-			.callMethod(com.selectcode.sms.shared.tenant.TenantContext.class, "callAcrossAllSchools",
+			.callMethod(com.tirvextech.sms.shared.tenant.TenantContext.class, "callAcrossAllSchools",
 					java.util.function.Supplier.class)
 			.check(classes);
 	}
@@ -132,7 +132,7 @@ class ArchitectureTest {
 				collectApiTypes(c.getComponentType(), seen);
 				return;
 			}
-			if (!c.getName().startsWith("com.selectcode.sms.") || !seen.add(c)) {
+			if (!c.getName().startsWith("com.tirvextech.sms.") || !seen.add(c)) {
 				return;
 			}
 			if (c.isRecord()) {

@@ -1,6 +1,6 @@
-package com.selectcode.sms.students.app;
+package com.tirvextech.sms.students.app;
 
-import com.selectcode.sms.shared.usage.UsageContributor;
+import com.tirvextech.sms.shared.usage.UsageContributor;
 import java.util.List;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;

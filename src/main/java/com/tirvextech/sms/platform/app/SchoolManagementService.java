@@ -1,16 +1,16 @@
-package com.selectcode.sms.platform.app;
+package com.tirvextech.sms.platform.app;
 
-import com.selectcode.sms.iam.SchoolUserAdministration;
-import com.selectcode.sms.iam.SchoolUserAdministration.NewAdmin;
-import com.selectcode.sms.iam.SchoolUserAdministration.SetupLink;
-import com.selectcode.sms.platform.domain.School;
-import com.selectcode.sms.platform.domain.SchoolDomain;
-import com.selectcode.sms.platform.infra.SchoolDomainRepository;
-import com.selectcode.sms.platform.infra.SchoolRepository;
-import com.selectcode.sms.school.SchoolSetup;
-import com.selectcode.sms.shared.audit.AuditService;
-import com.selectcode.sms.shared.tenant.TenantContext;
-import com.selectcode.sms.shared.web.ApiException;
+import com.tirvextech.sms.iam.SchoolUserAdministration;
+import com.tirvextech.sms.iam.SchoolUserAdministration.NewAdmin;
+import com.tirvextech.sms.iam.SchoolUserAdministration.SetupLink;
+import com.tirvextech.sms.platform.domain.School;
+import com.tirvextech.sms.platform.domain.SchoolDomain;
+import com.tirvextech.sms.platform.infra.SchoolDomainRepository;
+import com.tirvextech.sms.platform.infra.SchoolRepository;
+import com.tirvextech.sms.school.SchoolSetup;
+import com.tirvextech.sms.shared.audit.AuditService;
+import com.tirvextech.sms.shared.tenant.TenantContext;
+import com.tirvextech.sms.shared.web.ApiException;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
@@ -112,7 +112,7 @@ public class SchoolManagementService {
 			jdbc.update("insert into school (id, code, name) values (?, ?, ?)", id, code, name);
 			schoolSetup.initialise(name);
 			SetupLink link = userAdmin.provisionSchool(name, admin);
-			events.publishEvent(new com.selectcode.sms.shared.events.SchoolCreatedEvent(id, code, name));
+			events.publishEvent(new com.tirvextech.sms.shared.events.SchoolCreatedEvent(id, code, name));
 			audit.recordPlatform("SCHOOL_CREATED", id, Map.of("code", code, "name", name));
 			return link;
 		}));

@@ -1,10 +1,10 @@
-package com.selectcode.sms.support;
+package com.tirvextech.sms.support;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 
 import com.jayway.jsonpath.JsonPath;
-import com.selectcode.sms.shared.messaging.DevOutbox;
-import com.selectcode.sms.shared.security.Totp;
+import com.tirvextech.sms.shared.messaging.DevOutbox;
+import com.tirvextech.sms.shared.security.Totp;
 import jakarta.servlet.http.Cookie;
 import java.time.Instant;
 import java.util.LinkedHashMap;

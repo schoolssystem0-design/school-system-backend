@@ -1,11 +1,11 @@
-package com.selectcode.sms.iam.app;
+package com.tirvextech.sms.iam.app;
 
-import com.selectcode.sms.iam.domain.Role;
-import com.selectcode.sms.iam.domain.RoleTemplates;
-import com.selectcode.sms.iam.infra.RoleLinks;
-import com.selectcode.sms.iam.infra.RoleRepository;
-import com.selectcode.sms.shared.security.Permissions;
-import com.selectcode.sms.shared.tenant.TenantContext;
+import com.tirvextech.sms.iam.domain.Role;
+import com.tirvextech.sms.iam.domain.RoleTemplates;
+import com.tirvextech.sms.iam.infra.RoleLinks;
+import com.tirvextech.sms.iam.infra.RoleRepository;
+import com.tirvextech.sms.shared.security.Permissions;
+import com.tirvextech.sms.shared.tenant.TenantContext;
 import java.time.Clock;
 import java.util.List;
 import java.util.Set;

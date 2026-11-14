@@ -1,6 +1,6 @@
-package com.selectcode.sms.shared.security;
+package com.tirvextech.sms.shared.security;
 
-import com.selectcode.sms.shared.web.ApiException;
+import com.tirvextech.sms.shared.web.ApiException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.time.Clock;

@@ -1,4 +1,4 @@
-package com.selectcode.sms.iam;
+package com.tirvextech.sms.iam;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -6,11 +6,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.selectcode.sms.shared.security.SecurityConfig;
-import com.selectcode.sms.support.IntegrationTest;
-import com.selectcode.sms.support.TestData;
-import com.selectcode.sms.support.TestData.SeededSchool;
-import com.selectcode.sms.support.TestDatabase;
+import com.tirvextech.sms.shared.security.SecurityConfig;
+import com.tirvextech.sms.support.IntegrationTest;
+import com.tirvextech.sms.support.TestData;
+import com.tirvextech.sms.support.TestData.SeededSchool;
+import com.tirvextech.sms.support.TestDatabase;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

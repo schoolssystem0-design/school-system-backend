@@ -1,4 +1,4 @@
-package com.selectcode.sms.settings;
+package com.tirvextech.sms.settings;
 
 import java.util.Arrays;
 import java.util.List;

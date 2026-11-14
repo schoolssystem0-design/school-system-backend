@@ -1,4 +1,4 @@
-package com.selectcode.sms.shared.web;
+package com.tirvextech.sms.shared.web;
 
 import java.net.URI;
 import java.util.List;
@@ -9,7 +9,7 @@ import org.springframework.http.ProblemDetail;
 /** Builds RFC 9457 problem responses in the project's shape: {@code code}, {@code requestId}, optional {@code errors}. */
 public final class Problems {
 
-	private static final String TYPE_BASE = "https://sms.selectcode.dev/problems/";
+	private static final String TYPE_BASE = "https://tirvextech.com/problems/";
 
 	private Problems() {
 	}

@@ -1,4 +1,4 @@
-package com.selectcode.sms.shared.attendance;
+package com.tirvextech.sms.shared.attendance;
 
 import java.time.LocalDate;
 import java.util.List;

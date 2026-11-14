@@ -1,8 +1,8 @@
-package com.selectcode.sms.iam.infra;
+package com.tirvextech.sms.iam.infra;
 
-import com.selectcode.sms.iam.domain.RoleTemplates;
-import com.selectcode.sms.shared.security.Permissions;
-import com.selectcode.sms.shared.tenant.TenantContext;
+import com.tirvextech.sms.iam.domain.RoleTemplates;
+import com.tirvextech.sms.shared.security.Permissions;
+import com.tirvextech.sms.shared.tenant.TenantContext;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.selectcode.sms.shared.security;
+package com.tirvextech.sms.shared.security;
 
 import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;

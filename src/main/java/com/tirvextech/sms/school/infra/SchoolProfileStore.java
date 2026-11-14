@@ -1,6 +1,6 @@
-package com.selectcode.sms.school.infra;
+package com.tirvextech.sms.school.infra;
 
-import com.selectcode.sms.shared.tenant.TenantContext;
+import com.tirvextech.sms.shared.tenant.TenantContext;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.jdbc.core.JdbcTemplate;

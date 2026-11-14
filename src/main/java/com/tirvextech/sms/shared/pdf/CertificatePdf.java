@@ -1,4 +1,4 @@
-package com.selectcode.sms.shared.pdf;
+package com.tirvextech.sms.shared.pdf;
 
 import java.time.LocalDate;
 import java.util.List;

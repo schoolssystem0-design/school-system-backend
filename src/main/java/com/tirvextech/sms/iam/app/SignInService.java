@@ -1,15 +1,15 @@
-package com.selectcode.sms.iam.app;
+package com.tirvextech.sms.iam.app;
 
-import com.selectcode.sms.iam.SchoolUserPrincipal;
-import com.selectcode.sms.iam.domain.AppUser;
-import com.selectcode.sms.iam.domain.LoginEvent;
-import com.selectcode.sms.iam.infra.AppUserRepository;
-import com.selectcode.sms.iam.infra.LoginEventRepository;
-import com.selectcode.sms.shared.tenant.SchoolLookup;
-import com.selectcode.sms.shared.tenant.SchoolLookup.SchoolRef;
-import com.selectcode.sms.shared.tenant.TenantContext;
-import com.selectcode.sms.shared.web.ApiException;
-import com.selectcode.sms.shared.web.RateLimiter;
+import com.tirvextech.sms.iam.SchoolUserPrincipal;
+import com.tirvextech.sms.iam.domain.AppUser;
+import com.tirvextech.sms.iam.domain.LoginEvent;
+import com.tirvextech.sms.iam.infra.AppUserRepository;
+import com.tirvextech.sms.iam.infra.LoginEventRepository;
+import com.tirvextech.sms.shared.tenant.SchoolLookup;
+import com.tirvextech.sms.shared.tenant.SchoolLookup.SchoolRef;
+import com.tirvextech.sms.shared.tenant.TenantContext;
+import com.tirvextech.sms.shared.web.ApiException;
+import com.tirvextech.sms.shared.web.RateLimiter;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;

@@ -1,4 +1,4 @@
-package com.selectcode.sms.shared.tenant;
+package com.tirvextech.sms.shared.tenant;
 
 import java.util.Optional;
 import java.util.function.Supplier;

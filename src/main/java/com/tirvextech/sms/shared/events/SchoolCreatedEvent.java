@@ -1,4 +1,4 @@
-package com.selectcode.sms.shared.events;
+package com.tirvextech.sms.shared.events;
 
 /**
  * Published by the platform inside the transaction that creates a school (tenant = the new school). Modules listen

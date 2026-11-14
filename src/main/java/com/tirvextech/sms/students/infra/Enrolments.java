@@ -1,6 +1,6 @@
-package com.selectcode.sms.students.infra;
+package com.tirvextech.sms.students.infra;
 
-import com.selectcode.sms.shared.tenant.TenantContext;
+import com.tirvextech.sms.shared.tenant.TenantContext;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.util.List;

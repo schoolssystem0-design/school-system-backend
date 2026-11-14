@@ -1,6 +1,6 @@
-package com.selectcode.sms.academics.infra;
+package com.tirvextech.sms.academics.infra;
 
-import com.selectcode.sms.academics.domain.ClassSubject;
+import com.tirvextech.sms.academics.domain.ClassSubject;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ClassSubjectRepository extends JpaRepository<ClassSubject, Long> {

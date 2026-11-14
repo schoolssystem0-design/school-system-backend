@@ -1,10 +1,10 @@
-package com.selectcode.sms.iam.api;
+package com.tirvextech.sms.iam.api;
 
-import com.selectcode.sms.iam.app.RoleService;
-import com.selectcode.sms.iam.app.RoleService.RoleInput;
-import com.selectcode.sms.iam.app.RoleService.RoleView;
-import com.selectcode.sms.shared.security.Permissions;
-import com.selectcode.sms.shared.security.RequiresStepUp;
+import com.tirvextech.sms.iam.app.RoleService;
+import com.tirvextech.sms.iam.app.RoleService.RoleInput;
+import com.tirvextech.sms.iam.app.RoleService.RoleView;
+import com.tirvextech.sms.shared.security.Permissions;
+import com.tirvextech.sms.shared.security.RequiresStepUp;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

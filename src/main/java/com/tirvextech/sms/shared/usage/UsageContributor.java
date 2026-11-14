@@ -1,4 +1,4 @@
-package com.selectcode.sms.shared.usage;
+package com.tirvextech.sms.shared.usage;
 
 import java.util.List;
 

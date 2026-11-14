@@ -1,4 +1,4 @@
-package com.selectcode.sms.shared.messaging;
+package com.tirvextech.sms.shared.messaging;
 
 /**
  * Sends email/SMS. Phase 1 uses it for password resets, account setup links and step-up codes; the full messaging

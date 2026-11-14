@@ -1,13 +1,13 @@
-package com.selectcode.sms.reports.api;
+package com.tirvextech.sms.reports.api;
 
-import com.selectcode.sms.reports.app.CrossSchoolReports;
-import com.selectcode.sms.reports.app.CrossSchoolReports.CrossSchoolReport;
-import com.selectcode.sms.reports.app.ReportDoc;
-import com.selectcode.sms.reports.app.ReportFiles;
-import com.selectcode.sms.reports.app.ReportFiles.ExportTable;
-import com.selectcode.sms.reports.app.ReportService;
-import com.selectcode.sms.shared.security.CurrentActor;
-import com.selectcode.sms.shared.security.Permissions;
+import com.tirvextech.sms.reports.app.CrossSchoolReports;
+import com.tirvextech.sms.reports.app.CrossSchoolReports.CrossSchoolReport;
+import com.tirvextech.sms.reports.app.ReportDoc;
+import com.tirvextech.sms.reports.app.ReportFiles;
+import com.tirvextech.sms.reports.app.ReportFiles.ExportTable;
+import com.tirvextech.sms.reports.app.ReportService;
+import com.tirvextech.sms.shared.security.CurrentActor;
+import com.tirvextech.sms.shared.security.Permissions;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;

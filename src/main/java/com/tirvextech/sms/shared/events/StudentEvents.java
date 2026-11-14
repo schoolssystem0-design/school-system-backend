@@ -1,4 +1,4 @@
-package com.selectcode.sms.shared.events;
+package com.tirvextech.sms.shared.events;
 
 import java.time.LocalDate;
 

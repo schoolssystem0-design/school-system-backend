@@ -1,6 +1,6 @@
-package com.selectcode.sms.iam.infra;
+package com.tirvextech.sms.iam.infra;
 
-import com.selectcode.sms.iam.domain.AppUser;
+import com.tirvextech.sms.iam.domain.AppUser;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

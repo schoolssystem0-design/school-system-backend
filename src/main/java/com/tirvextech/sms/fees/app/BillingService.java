@@ -1,16 +1,16 @@
-package com.selectcode.sms.fees.app;
+package com.tirvextech.sms.fees.app;
 
-import com.selectcode.sms.settings.SettingKey;
-import com.selectcode.sms.settings.SettingsService;
-import com.selectcode.sms.shared.audit.AuditService;
-import com.selectcode.sms.shared.money.Money;
-import com.selectcode.sms.shared.persistence.NumberSequences;
-import com.selectcode.sms.shared.security.CurrentActor;
-import com.selectcode.sms.shared.tenant.TenantContext;
-import com.selectcode.sms.shared.validation.PakFormats;
-import com.selectcode.sms.shared.web.ApiException;
-import com.selectcode.sms.shared.year.AcademicYearLookup.YearRef;
-import com.selectcode.sms.shared.year.YearContext;
+import com.tirvextech.sms.settings.SettingKey;
+import com.tirvextech.sms.settings.SettingsService;
+import com.tirvextech.sms.shared.audit.AuditService;
+import com.tirvextech.sms.shared.money.Money;
+import com.tirvextech.sms.shared.persistence.NumberSequences;
+import com.tirvextech.sms.shared.security.CurrentActor;
+import com.tirvextech.sms.shared.tenant.TenantContext;
+import com.tirvextech.sms.shared.validation.PakFormats;
+import com.tirvextech.sms.shared.web.ApiException;
+import com.tirvextech.sms.shared.year.AcademicYearLookup.YearRef;
+import com.tirvextech.sms.shared.year.YearContext;
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.time.Clock;
@@ -97,12 +97,12 @@ public class BillingService {
 
 	private final Clock clock;
 
-	private final org.springframework.beans.factory.ObjectProvider<com.selectcode.sms.shared.attendance.StudentAbsences> absences;
+	private final org.springframework.beans.factory.ObjectProvider<com.tirvextech.sms.shared.attendance.StudentAbsences> absences;
 
 	BillingService(JdbcTemplate jdbc, PlatformTransactionManager transactionManager, YearContext yearContext,
 			SettingsService settings, NumberSequences sequences, FeeLedger ledger, CreditApplier credit,
 			AuditService audit, JsonMapper json, Clock clock,
-			org.springframework.beans.factory.ObjectProvider<com.selectcode.sms.shared.attendance.StudentAbsences> absences) {
+			org.springframework.beans.factory.ObjectProvider<com.tirvextech.sms.shared.attendance.StudentAbsences> absences) {
 		this.absences = absences;
 		this.jdbc = jdbc;
 		this.transaction = new TransactionTemplate(transactionManager);

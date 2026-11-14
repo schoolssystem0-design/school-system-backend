@@ -1,11 +1,11 @@
-package com.selectcode.sms.exams.app;
+package com.tirvextech.sms.exams.app;
 
-import com.selectcode.sms.exams.app.ResultService.ClassResults;
-import com.selectcode.sms.exams.app.ResultService.StudentResult;
-import com.selectcode.sms.shared.audit.AuditService;
-import com.selectcode.sms.shared.messaging.MessageOutbox;
-import com.selectcode.sms.shared.tenant.TenantContext;
-import com.selectcode.sms.shared.web.ApiException;
+import com.tirvextech.sms.exams.app.ResultService.ClassResults;
+import com.tirvextech.sms.exams.app.ResultService.StudentResult;
+import com.tirvextech.sms.shared.audit.AuditService;
+import com.tirvextech.sms.shared.messaging.MessageOutbox;
+import com.tirvextech.sms.shared.tenant.TenantContext;
+import com.tirvextech.sms.shared.web.ApiException;
 import java.util.List;
 import java.util.Map;
 import org.springframework.jdbc.core.JdbcTemplate;

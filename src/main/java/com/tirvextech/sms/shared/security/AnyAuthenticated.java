@@ -1,4 +1,4 @@
-package com.selectcode.sms.shared.security;
+package com.tirvextech.sms.shared.security;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;

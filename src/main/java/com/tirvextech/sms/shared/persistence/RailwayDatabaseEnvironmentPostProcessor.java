@@ -1,4 +1,4 @@
-package com.selectcode.sms.shared.persistence;
+package com.tirvextech.sms.shared.persistence;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;

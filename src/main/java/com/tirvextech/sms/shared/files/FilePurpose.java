@@ -1,6 +1,6 @@
-package com.selectcode.sms.shared.files;
+package com.tirvextech.sms.shared.files;
 
-import com.selectcode.sms.shared.security.Permissions;
+import com.tirvextech.sms.shared.security.Permissions;
 import java.util.Set;
 
 /**

@@ -1,17 +1,17 @@
-package com.selectcode.sms.communication.app;
+package com.tirvextech.sms.communication.app;
 
-import com.selectcode.sms.communication.MessageTemplates;
-import com.selectcode.sms.communication.MessageTemplates.Code;
-import com.selectcode.sms.settings.SettingKey;
-import com.selectcode.sms.settings.SettingsService;
-import com.selectcode.sms.shared.audit.AuditService;
-import com.selectcode.sms.shared.messaging.MessageOutbox;
-import com.selectcode.sms.shared.messaging.SmsSegments;
-import com.selectcode.sms.shared.money.MoneyInput;
-import com.selectcode.sms.shared.security.CurrentActor;
-import com.selectcode.sms.shared.tenant.TenantContext;
-import com.selectcode.sms.shared.validation.PakFormats;
-import com.selectcode.sms.shared.web.ApiException;
+import com.tirvextech.sms.communication.MessageTemplates;
+import com.tirvextech.sms.communication.MessageTemplates.Code;
+import com.tirvextech.sms.settings.SettingKey;
+import com.tirvextech.sms.settings.SettingsService;
+import com.tirvextech.sms.shared.audit.AuditService;
+import com.tirvextech.sms.shared.messaging.MessageOutbox;
+import com.tirvextech.sms.shared.messaging.SmsSegments;
+import com.tirvextech.sms.shared.money.MoneyInput;
+import com.tirvextech.sms.shared.security.CurrentActor;
+import com.tirvextech.sms.shared.tenant.TenantContext;
+import com.tirvextech.sms.shared.validation.PakFormats;
+import com.tirvextech.sms.shared.web.ApiException;
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.time.Clock;
@@ -241,7 +241,7 @@ public class CommunicationService {
 		LocalDate first = ((Date) s.get("admission_date")).toLocalDate();
 		boolean queued = outbox.queueSms(phone, templates.render(Code.WELCOME, Map.of("name", (String) s.get("name"), "class",
 				s.get("class_name") == null ? "our school" : (String) s.get("class_name"), "date",
-				com.selectcode.sms.shared.pdf.PdfKit.date(first)), MessageTemplates.language((String) s.get("message_language"))),
+				com.tirvextech.sms.shared.pdf.PdfKit.date(first)), MessageTemplates.language((String) s.get("message_language"))),
 				"WELCOME", "student", studentId, "welcome-" + studentId);
 		if (queued) {
 			audit.record("WELCOME_SENT", "student", studentId, null, Map.of("student", studentId));

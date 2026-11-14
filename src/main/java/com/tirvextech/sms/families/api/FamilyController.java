@@ -1,13 +1,13 @@
-package com.selectcode.sms.families.api;
+package com.tirvextech.sms.families.api;
 
-import com.selectcode.sms.families.FamilyService;
-import com.selectcode.sms.families.FamilyService.FamilyBulkValue;
-import com.selectcode.sms.families.FamilyService.DataIssue;
-import com.selectcode.sms.families.FamilyService.FamilyRow;
-import com.selectcode.sms.families.FamilyService.FamilyView;
-import com.selectcode.sms.families.FamilyDetails;
-import com.selectcode.sms.shared.security.Permissions;
-import com.selectcode.sms.shared.web.PageResponse;
+import com.tirvextech.sms.families.FamilyService;
+import com.tirvextech.sms.families.FamilyService.FamilyBulkValue;
+import com.tirvextech.sms.families.FamilyService.DataIssue;
+import com.tirvextech.sms.families.FamilyService.FamilyRow;
+import com.tirvextech.sms.families.FamilyService.FamilyView;
+import com.tirvextech.sms.families.FamilyDetails;
+import com.tirvextech.sms.shared.security.Permissions;
+import com.tirvextech.sms.shared.web.PageResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

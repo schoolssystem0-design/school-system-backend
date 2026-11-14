@@ -1,4 +1,4 @@
-package com.selectcode.sms.shared.security;
+package com.tirvextech.sms.shared.security;
 
 /**
  * Which records a school user may see (FR 2.5): all, only their assigned classes (teachers), or only their own.

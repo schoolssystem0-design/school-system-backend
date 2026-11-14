@@ -1,6 +1,6 @@
-package com.selectcode.sms.iam.domain;
+package com.tirvextech.sms.iam.domain;
 
-import com.selectcode.sms.shared.web.ApiException;
+import com.tirvextech.sms.shared.web.ApiException;
 import java.security.SecureRandom;
 import java.util.Locale;
 import java.util.Set;

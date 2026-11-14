@@ -1,19 +1,19 @@
-package com.selectcode.sms.communication;
+package com.tirvextech.sms.communication;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.selectcode.sms.office.app.BirthdaySmsJob;
-import com.selectcode.sms.shared.messaging.DevOutbox;
-import com.selectcode.sms.shared.messaging.MessageOutbox;
-import com.selectcode.sms.shared.messaging.smsgate.SmsGateJobs;
-import com.selectcode.sms.support.ApiClient;
-import com.selectcode.sms.support.IntegrationTest;
-import com.selectcode.sms.support.TestData;
-import com.selectcode.sms.support.TestData.SeededSchool;
-import com.selectcode.sms.support.TestDatabase;
+import com.tirvextech.sms.office.app.BirthdaySmsJob;
+import com.tirvextech.sms.shared.messaging.DevOutbox;
+import com.tirvextech.sms.shared.messaging.MessageOutbox;
+import com.tirvextech.sms.shared.messaging.smsgate.SmsGateJobs;
+import com.tirvextech.sms.support.ApiClient;
+import com.tirvextech.sms.support.IntegrationTest;
+import com.tirvextech.sms.support.TestData;
+import com.tirvextech.sms.support.TestData.SeededSchool;
+import com.tirvextech.sms.support.TestDatabase;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;

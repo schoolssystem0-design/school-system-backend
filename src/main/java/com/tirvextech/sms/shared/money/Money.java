@@ -1,4 +1,4 @@
-package com.selectcode.sms.shared.money;
+package com.tirvextech.sms.shared.money;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;

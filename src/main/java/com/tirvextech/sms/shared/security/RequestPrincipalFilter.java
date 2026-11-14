@@ -1,7 +1,7 @@
-package com.selectcode.sms.shared.security;
+package com.tirvextech.sms.shared.security;
 
-import com.selectcode.sms.shared.tenant.TenantContext;
-import com.selectcode.sms.shared.web.Problems;
+import com.tirvextech.sms.shared.tenant.TenantContext;
+import com.tirvextech.sms.shared.web.Problems;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

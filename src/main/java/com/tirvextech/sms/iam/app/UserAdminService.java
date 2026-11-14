@@ -1,18 +1,18 @@
-package com.selectcode.sms.iam.app;
+package com.tirvextech.sms.iam.app;
 
-import com.selectcode.sms.iam.domain.AppUser;
-import com.selectcode.sms.iam.domain.PasswordPolicy;
-import com.selectcode.sms.iam.domain.Role;
-import com.selectcode.sms.iam.infra.AppUserRepository;
-import com.selectcode.sms.iam.infra.RoleLinks;
-import com.selectcode.sms.iam.infra.RoleRepository;
-import com.selectcode.sms.iam.infra.SessionRevoker;
-import com.selectcode.sms.shared.audit.AuditService;
-import com.selectcode.sms.shared.security.ActorPrincipal;
-import com.selectcode.sms.shared.security.CurrentActor;
-import com.selectcode.sms.shared.tenant.TenantContext;
-import com.selectcode.sms.shared.web.ApiException;
-import com.selectcode.sms.shared.web.PageResponse;
+import com.tirvextech.sms.iam.domain.AppUser;
+import com.tirvextech.sms.iam.domain.PasswordPolicy;
+import com.tirvextech.sms.iam.domain.Role;
+import com.tirvextech.sms.iam.infra.AppUserRepository;
+import com.tirvextech.sms.iam.infra.RoleLinks;
+import com.tirvextech.sms.iam.infra.RoleRepository;
+import com.tirvextech.sms.iam.infra.SessionRevoker;
+import com.tirvextech.sms.shared.audit.AuditService;
+import com.tirvextech.sms.shared.security.ActorPrincipal;
+import com.tirvextech.sms.shared.security.CurrentActor;
+import com.tirvextech.sms.shared.tenant.TenantContext;
+import com.tirvextech.sms.shared.web.ApiException;
+import com.tirvextech.sms.shared.web.PageResponse;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Collection;
@@ -45,7 +45,7 @@ public class UserAdminService {
 	}
 
 	public record UserInput(String username, String displayName, String email, String phone, List<Long> roleIds,
-			com.selectcode.sms.shared.security.DataScope dataScope) {
+			com.tirvextech.sms.shared.security.DataScope dataScope) {
 	}
 
 	/** Shown to the administrator once; the user must change it at first sign-in. */
@@ -66,11 +66,11 @@ public class UserAdminService {
 
 	private final Clock clock;
 
-	private final com.selectcode.sms.shared.files.FileService files;
+	private final com.tirvextech.sms.shared.files.FileService files;
 
 	UserAdminService(AppUserRepository users, RoleRepository roles, RoleLinks roleLinks,
 			PasswordEncoder passwordEncoder, SessionRevoker sessions, AuditService audit, Clock clock,
-			com.selectcode.sms.shared.files.FileService files) {
+			com.tirvextech.sms.shared.files.FileService files) {
 		this.files = files;
 		this.users = users;
 		this.roles = roles;
@@ -152,7 +152,7 @@ public class UserAdminService {
 		if (user.isMainAdmin()) {
 			throw ApiException.conflict("MAIN_ADMIN", "The main administrator cannot be deactivated");
 		}
-		if (actor.actorType() == com.selectcode.sms.shared.security.ActorType.USER && actor.actorId() == id) {
+		if (actor.actorType() == com.tirvextech.sms.shared.security.ActorType.USER && actor.actorId() == id) {
 			throw ApiException.conflict("SELF_DEACTIVATION", "You cannot deactivate your own account");
 		}
 		changeStatus(user, AppUser.Status.INACTIVE, required(reason, "Reason"), actor);
@@ -269,7 +269,7 @@ public class UserAdminService {
 	@Transactional
 	public Long changeOwnPhoto(Long fileId) {
 		var actor = CurrentActor.require();
-		if (actor.actorType() != com.selectcode.sms.shared.security.ActorType.USER) {
+		if (actor.actorType() != com.tirvextech.sms.shared.security.ActorType.USER) {
 			throw ApiException.businessRule("NOT_A_SCHOOL_USER", "Only school users have a profile photo");
 		}
 		AppUser user = find(actor.actorId());
@@ -317,8 +317,8 @@ public class UserAdminService {
 		}
 	}
 
-	private static com.selectcode.sms.shared.security.DataScope scope(com.selectcode.sms.shared.security.DataScope scope) {
-		return scope == null ? com.selectcode.sms.shared.security.DataScope.ALL : scope;
+	private static com.tirvextech.sms.shared.security.DataScope scope(com.tirvextech.sms.shared.security.DataScope scope) {
+		return scope == null ? com.tirvextech.sms.shared.security.DataScope.ALL : scope;
 	}
 
 	private static String required(String value, String field) {

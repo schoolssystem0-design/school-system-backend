@@ -1,7 +1,7 @@
-package com.selectcode.sms.platform;
+package com.tirvextech.sms.platform;
 
-import com.selectcode.sms.shared.security.ActorPrincipal;
-import com.selectcode.sms.shared.security.ActorType;
+import com.tirvextech.sms.shared.security.ActorPrincipal;
+import com.tirvextech.sms.shared.security.ActorType;
 import java.io.Serializable;
 import org.springframework.security.core.AuthenticatedPrincipal;
 

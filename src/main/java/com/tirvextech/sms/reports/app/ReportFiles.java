@@ -1,11 +1,11 @@
-package com.selectcode.sms.reports.app;
+package com.tirvextech.sms.reports.app;
 
-import com.selectcode.sms.reports.app.ReportDoc.Column;
-import com.selectcode.sms.reports.app.ReportDoc.Kind;
-import com.selectcode.sms.reports.app.ReportDoc.Section;
-import com.selectcode.sms.shared.audit.AuditService;
-import com.selectcode.sms.shared.pdf.LetterheadSource;
-import com.selectcode.sms.shared.web.ApiException;
+import com.tirvextech.sms.reports.app.ReportDoc.Column;
+import com.tirvextech.sms.reports.app.ReportDoc.Kind;
+import com.tirvextech.sms.reports.app.ReportDoc.Section;
+import com.tirvextech.sms.shared.audit.AuditService;
+import com.tirvextech.sms.shared.pdf.LetterheadSource;
+import com.tirvextech.sms.shared.web.ApiException;
 import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Service;

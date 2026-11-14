@@ -1,4 +1,4 @@
-package com.selectcode.sms.iam.app;
+package com.tirvextech.sms.iam.app;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;

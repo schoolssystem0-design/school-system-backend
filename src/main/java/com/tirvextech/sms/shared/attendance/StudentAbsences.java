@@ -1,4 +1,4 @@
-package com.selectcode.sms.shared.attendance;
+package com.tirvextech.sms.shared.attendance;
 
 import java.time.YearMonth;
 import java.util.Map;

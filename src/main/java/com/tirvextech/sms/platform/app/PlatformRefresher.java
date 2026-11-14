@@ -1,13 +1,13 @@
-package com.selectcode.sms.platform.app;
+package com.tirvextech.sms.platform.app;
 
-import com.selectcode.sms.platform.PlatformPrincipal;
-import com.selectcode.sms.platform.domain.PlatformUser;
-import com.selectcode.sms.platform.infra.PlatformUserRepository;
-import com.selectcode.sms.platform.infra.SchoolRepository;
-import com.selectcode.sms.shared.security.ActorPrincipal;
-import com.selectcode.sms.shared.security.CurrentActor;
-import com.selectcode.sms.shared.security.Permissions;
-import com.selectcode.sms.shared.security.PrincipalRefresher;
+import com.tirvextech.sms.platform.PlatformPrincipal;
+import com.tirvextech.sms.platform.domain.PlatformUser;
+import com.tirvextech.sms.platform.infra.PlatformUserRepository;
+import com.tirvextech.sms.platform.infra.SchoolRepository;
+import com.tirvextech.sms.shared.security.ActorPrincipal;
+import com.tirvextech.sms.shared.security.CurrentActor;
+import com.tirvextech.sms.shared.security.Permissions;
+import com.tirvextech.sms.shared.security.PrincipalRefresher;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.security.core.GrantedAuthority;

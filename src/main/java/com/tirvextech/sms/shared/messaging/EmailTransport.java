@@ -1,4 +1,4 @@
-package com.selectcode.sms.shared.messaging;
+package com.tirvextech.sms.shared.messaging;
 
 import java.io.IOException;
 import java.net.URI;

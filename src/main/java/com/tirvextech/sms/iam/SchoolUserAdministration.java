@@ -1,21 +1,21 @@
-package com.selectcode.sms.iam;
+package com.tirvextech.sms.iam;
 
-import com.selectcode.sms.iam.app.AccountService;
-import com.selectcode.sms.iam.domain.AppUser;
-import com.selectcode.sms.iam.domain.Role;
-import com.selectcode.sms.iam.domain.RoleTemplates;
-import com.selectcode.sms.iam.infra.AppUserRepository;
-import com.selectcode.sms.iam.infra.PasswordTokens;
-import com.selectcode.sms.iam.infra.RoleLinks;
-import com.selectcode.sms.iam.infra.RoleRepository;
-import com.selectcode.sms.iam.infra.SessionRevoker;
-import com.selectcode.sms.shared.audit.AuditService;
-import com.selectcode.sms.shared.messaging.MessageSender;
-import com.selectcode.sms.shared.messaging.OutgoingMessage;
-import com.selectcode.sms.shared.security.CurrentActor;
-import com.selectcode.sms.shared.security.Permissions;
-import com.selectcode.sms.shared.tenant.TenantContext;
-import com.selectcode.sms.shared.web.ApiException;
+import com.tirvextech.sms.iam.app.AccountService;
+import com.tirvextech.sms.iam.domain.AppUser;
+import com.tirvextech.sms.iam.domain.Role;
+import com.tirvextech.sms.iam.domain.RoleTemplates;
+import com.tirvextech.sms.iam.infra.AppUserRepository;
+import com.tirvextech.sms.iam.infra.PasswordTokens;
+import com.tirvextech.sms.iam.infra.RoleLinks;
+import com.tirvextech.sms.iam.infra.RoleRepository;
+import com.tirvextech.sms.iam.infra.SessionRevoker;
+import com.tirvextech.sms.shared.audit.AuditService;
+import com.tirvextech.sms.shared.messaging.MessageSender;
+import com.tirvextech.sms.shared.messaging.OutgoingMessage;
+import com.tirvextech.sms.shared.security.CurrentActor;
+import com.tirvextech.sms.shared.security.Permissions;
+import com.tirvextech.sms.shared.tenant.TenantContext;
+import com.tirvextech.sms.shared.web.ApiException;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
@@ -66,9 +66,9 @@ public class SchoolUserAdministration {
 
 	private final Clock clock;
 
-	private final com.selectcode.sms.iam.app.UserAdminService userAdminService;
+	private final com.tirvextech.sms.iam.app.UserAdminService userAdminService;
 
-	SchoolUserAdministration(com.selectcode.sms.iam.app.UserAdminService userAdminService, RoleRepository roles, RoleLinks roleLinks, AppUserRepository users, PasswordTokens tokens,
+	SchoolUserAdministration(com.tirvextech.sms.iam.app.UserAdminService userAdminService, RoleRepository roles, RoleLinks roleLinks, AppUserRepository users, PasswordTokens tokens,
 			PasswordEncoder passwordEncoder, AccountService accounts, SessionRevoker sessions, MessageSender messages,
 			AuditService audit, JdbcTemplate jdbc, Clock clock) {
 		this.roles = roles;
@@ -113,7 +113,7 @@ public class SchoolUserAdministration {
 		}
 		// Unusable random password until the setup link is used.
 		AppUser user = AppUser.create(username, admin.displayName().trim(), admin.email().trim(), null,
-				com.selectcode.sms.shared.security.DataScope.ALL, passwordEncoder.encode(UUID.randomUUID().toString()), false);
+				com.tirvextech.sms.shared.security.DataScope.ALL, passwordEncoder.encode(UUID.randomUUID().toString()), false);
 		user.markMainAdmin();
 		user = users.save(user);
 		roleLinks.replaceUserRoles(user.getId(), List.of(adminRole.getId()));
@@ -151,8 +151,8 @@ public class SchoolUserAdministration {
 	/** Login for a staff member (FR 6.2, 7.2); returns the temporary password shown once. */
 	public NewLogin createLoginForStaff(long staffId,
 			String username, String displayName, String email, String phone, List<Long> roleIds,
-			com.selectcode.sms.shared.security.DataScope dataScope) {
-		var created = userAdminService.create(new com.selectcode.sms.iam.app.UserAdminService.UserInput(username,
+			com.tirvextech.sms.shared.security.DataScope dataScope) {
+		var created = userAdminService.create(new com.tirvextech.sms.iam.app.UserAdminService.UserInput(username,
 				displayName, email, phone, roleIds, dataScope), staffId);
 		return new NewLogin(created.userId(), created.username(), created.temporaryPassword());
 	}

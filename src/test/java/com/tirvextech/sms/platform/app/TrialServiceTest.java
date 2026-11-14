@@ -1,4 +1,4 @@
-package com.selectcode.sms.platform.app;
+package com.tirvextech.sms.platform.app;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

@@ -1,8 +1,8 @@
-package com.selectcode.sms.communication;
+package com.tirvextech.sms.communication;
 
-import com.selectcode.sms.settings.SettingKey;
-import com.selectcode.sms.settings.SettingsService;
-import com.selectcode.sms.shared.tenant.TenantContext;
+import com.tirvextech.sms.settings.SettingKey;
+import com.tirvextech.sms.settings.SettingsService;
+import com.tirvextech.sms.shared.tenant.TenantContext;
 import java.util.List;
 import java.util.Map;
 import org.springframework.jdbc.core.JdbcTemplate;

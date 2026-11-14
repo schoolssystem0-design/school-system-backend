@@ -1,7 +1,7 @@
-package com.selectcode.sms.academics.app;
+package com.tirvextech.sms.academics.app;
 
-import com.selectcode.sms.shared.year.AcademicYearLookup.YearRef;
-import com.selectcode.sms.shared.year.RolloverStep;
+import com.tirvextech.sms.shared.year.AcademicYearLookup.YearRef;
+import com.tirvextech.sms.shared.year.RolloverStep;
 import java.sql.Date;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

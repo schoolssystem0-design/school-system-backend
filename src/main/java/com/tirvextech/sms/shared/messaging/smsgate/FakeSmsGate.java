@@ -1,6 +1,6 @@
-package com.selectcode.sms.shared.messaging.smsgate;
+package com.tirvextech.sms.shared.messaging.smsgate;
 
-import com.selectcode.sms.shared.security.PublicEndpoint;
+import com.tirvextech.sms.shared.security.PublicEndpoint;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;

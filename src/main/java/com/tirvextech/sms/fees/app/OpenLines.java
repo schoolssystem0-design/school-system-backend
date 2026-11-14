@@ -1,4 +1,4 @@
-package com.selectcode.sms.fees.app;
+package com.tirvextech.sms.fees.app;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

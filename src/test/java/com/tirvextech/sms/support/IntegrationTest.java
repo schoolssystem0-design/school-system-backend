@@ -1,6 +1,6 @@
-package com.selectcode.sms.support;
+package com.tirvextech.sms.support;
 
-import com.selectcode.sms.shared.web.RateLimiter;
+import com.tirvextech.sms.shared.web.RateLimiter;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

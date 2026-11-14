@@ -1,6 +1,6 @@
-package com.selectcode.sms.school.infra;
+package com.tirvextech.sms.school.infra;
 
-import com.selectcode.sms.school.domain.CalendarDayOff;
+import com.tirvextech.sms.school.domain.CalendarDayOff;
 import java.time.LocalDate;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;

@@ -1,10 +1,10 @@
-package com.selectcode.sms.platform.app;
+package com.tirvextech.sms.platform.app;
 
-import com.selectcode.sms.platform.PlatformPrincipal;
-import com.selectcode.sms.platform.domain.School;
-import com.selectcode.sms.shared.audit.AuditService;
-import com.selectcode.sms.shared.security.CurrentActor;
-import com.selectcode.sms.shared.security.StepUp;
+import com.tirvextech.sms.platform.PlatformPrincipal;
+import com.tirvextech.sms.platform.domain.School;
+import com.tirvextech.sms.shared.audit.AuditService;
+import com.tirvextech.sms.shared.security.CurrentActor;
+import com.tirvextech.sms.shared.security.StepUp;
 import java.util.List;
 import java.util.Map;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;

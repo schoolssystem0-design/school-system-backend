@@ -1,4 +1,4 @@
-package com.selectcode.sms.shared.attendance;
+package com.tirvextech.sms.shared.attendance;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;

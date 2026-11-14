@@ -1,6 +1,6 @@
-package com.selectcode.sms.shared.security;
+package com.tirvextech.sms.shared.security;
 
-import com.selectcode.sms.shared.web.Problems;
+import com.tirvextech.sms.shared.web.Problems;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import org.springframework.context.annotation.Bean;
@@ -118,6 +118,28 @@ public class SecurityConfig {
 			serializer.setDomainName(properties.cookieDomain());
 		}
 		return serializer;
+	}
+
+	/**
+	 * How saved sessions are read back from the database. A session the server cannot read any more (saved by an older
+	 * version of the code, e.g. before the classes were renamed) counts as signed out instead of failing the request.
+	 */
+	@Bean("springSessionConversionService")
+	org.springframework.core.convert.support.GenericConversionService springSessionConversionService() {
+		var service = new org.springframework.core.convert.support.GenericConversionService();
+		service.addConverter(Object.class, byte[].class, new org.springframework.core.serializer.support.SerializingConverter());
+		var read = new org.springframework.core.serializer.support.DeserializingConverter(SecurityConfig.class.getClassLoader());
+		service.addConverter(byte[].class, Object.class, (byte[] bytes) -> {
+			try {
+				return read.convert(bytes);
+			}
+			catch (RuntimeException e) {
+				org.slf4j.LoggerFactory.getLogger(SecurityConfig.class)
+					.info("A saved session could not be read and was treated as signed out: {}", e.getMessage());
+				return null;
+			}
+		});
+		return service;
 	}
 
 	private static void writeProblem(HttpServletResponse response, JsonMapper json, ProblemDetail problem)

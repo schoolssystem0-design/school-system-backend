@@ -1,4 +1,4 @@
-package com.selectcode.sms.shared.persistence;
+package com.tirvextech.sms.shared.persistence;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.MappedSuperclass;

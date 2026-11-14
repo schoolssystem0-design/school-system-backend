@@ -1,15 +1,15 @@
-package com.selectcode.sms.iam.app;
+package com.tirvextech.sms.iam.app;
 
-import com.selectcode.sms.iam.domain.AppUser;
-import com.selectcode.sms.iam.infra.AppUserRepository;
-import com.selectcode.sms.shared.messaging.MessageSender;
-import com.selectcode.sms.shared.messaging.OutgoingMessage;
-import com.selectcode.sms.shared.security.ActorPrincipal;
-import com.selectcode.sms.shared.security.ActorType;
-import com.selectcode.sms.shared.security.CurrentActor;
-import com.selectcode.sms.shared.security.StepUp;
-import com.selectcode.sms.shared.web.ApiException;
-import com.selectcode.sms.shared.web.RateLimiter;
+import com.tirvextech.sms.iam.domain.AppUser;
+import com.tirvextech.sms.iam.infra.AppUserRepository;
+import com.tirvextech.sms.shared.messaging.MessageSender;
+import com.tirvextech.sms.shared.messaging.OutgoingMessage;
+import com.tirvextech.sms.shared.security.ActorPrincipal;
+import com.tirvextech.sms.shared.security.ActorType;
+import com.tirvextech.sms.shared.security.CurrentActor;
+import com.tirvextech.sms.shared.security.StepUp;
+import com.tirvextech.sms.shared.web.ApiException;
+import com.tirvextech.sms.shared.web.RateLimiter;
 import jakarta.servlet.http.HttpSession;
 import java.time.Clock;
 import java.time.Duration;

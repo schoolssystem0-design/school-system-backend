@@ -1,10 +1,10 @@
-package com.selectcode.sms.admissions.app;
+package com.tirvextech.sms.admissions.app;
 
-import com.selectcode.sms.shared.audit.AuditService;
-import com.selectcode.sms.shared.events.SchoolCreatedEvent;
-import com.selectcode.sms.shared.tenant.TenantContext;
-import com.selectcode.sms.shared.validation.PakFormats;
-import com.selectcode.sms.shared.web.ApiException;
+import com.tirvextech.sms.shared.audit.AuditService;
+import com.tirvextech.sms.shared.events.SchoolCreatedEvent;
+import com.tirvextech.sms.shared.tenant.TenantContext;
+import com.tirvextech.sms.shared.validation.PakFormats;
+import com.tirvextech.sms.shared.web.ApiException;
 import java.util.List;
 import java.util.Map;
 import org.springframework.context.event.EventListener;

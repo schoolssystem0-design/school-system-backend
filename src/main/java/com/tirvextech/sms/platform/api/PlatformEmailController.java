@@ -1,9 +1,9 @@
-package com.selectcode.sms.platform.api;
+package com.tirvextech.sms.platform.api;
 
-import com.selectcode.sms.shared.audit.AuditService;
-import com.selectcode.sms.shared.messaging.EmailSetup;
-import com.selectcode.sms.shared.messaging.EmailSetup.EmailStatus;
-import com.selectcode.sms.shared.security.CurrentActor;
+import com.tirvextech.sms.shared.audit.AuditService;
+import com.tirvextech.sms.shared.messaging.EmailSetup;
+import com.tirvextech.sms.shared.messaging.EmailSetup.EmailStatus;
+import com.tirvextech.sms.shared.security.CurrentActor;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

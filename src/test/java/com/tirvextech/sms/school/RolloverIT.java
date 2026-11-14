@@ -1,14 +1,14 @@
-package com.selectcode.sms.school;
+package com.tirvextech.sms.school;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.selectcode.sms.support.ApiClient;
-import com.selectcode.sms.support.IntegrationTest;
-import com.selectcode.sms.support.TestData;
-import com.selectcode.sms.support.TestData.SeededSchool;
-import com.selectcode.sms.support.TestDatabase;
+import com.tirvextech.sms.support.ApiClient;
+import com.tirvextech.sms.support.IntegrationTest;
+import com.tirvextech.sms.support.TestData;
+import com.tirvextech.sms.support.TestData.SeededSchool;
+import com.tirvextech.sms.support.TestDatabase;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -84,7 +84,7 @@ class RolloverIT extends IntegrationTest {
 			.contains("fees.view", "fees.payment.add", "fees.bill.generate")
 			.doesNotContain("fees.payment.reverse", "fees.adjust.approve", "academics.view");
 		assertThat(db.queryForObject("select template_version from role where id = ?", Integer.class, roleId))
-			.isEqualTo(com.selectcode.sms.shared.security.Permissions.CATALOGUE_VERSION);
+			.isEqualTo(com.tirvextech.sms.shared.security.Permissions.CATALOGUE_VERSION);
 		ApplicationArguments unused = null;
 		assertThat(unused).isNull();
 	}

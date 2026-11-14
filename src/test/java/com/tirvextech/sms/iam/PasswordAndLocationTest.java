@@ -1,11 +1,11 @@
-package com.selectcode.sms.iam;
+package com.tirvextech.sms.iam;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.selectcode.sms.iam.domain.LoginEvent;
-import com.selectcode.sms.iam.domain.PasswordPolicy;
-import com.selectcode.sms.shared.web.ApiException;
+import com.tirvextech.sms.iam.domain.LoginEvent;
+import com.tirvextech.sms.iam.domain.PasswordPolicy;
+import com.tirvextech.sms.shared.web.ApiException;
 import org.junit.jupiter.api.Test;
 
 class PasswordAndLocationTest {

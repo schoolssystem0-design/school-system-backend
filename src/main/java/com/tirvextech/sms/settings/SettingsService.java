@@ -1,11 +1,11 @@
-package com.selectcode.sms.settings;
+package com.tirvextech.sms.settings;
 
-import com.selectcode.sms.shared.audit.AuditService;
-import com.selectcode.sms.shared.money.Money;
-import com.selectcode.sms.shared.security.ActorPrincipal;
-import com.selectcode.sms.shared.security.CurrentActor;
-import com.selectcode.sms.shared.tenant.TenantContext;
-import com.selectcode.sms.shared.web.ApiException;
+import com.tirvextech.sms.shared.audit.AuditService;
+import com.tirvextech.sms.shared.money.Money;
+import com.tirvextech.sms.shared.security.ActorPrincipal;
+import com.tirvextech.sms.shared.security.CurrentActor;
+import com.tirvextech.sms.shared.tenant.TenantContext;
+import com.tirvextech.sms.shared.web.ApiException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalTime;

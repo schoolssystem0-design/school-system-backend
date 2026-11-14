@@ -1,14 +1,14 @@
-package com.selectcode.sms.shared.tenant;
+package com.tirvextech.sms.shared.tenant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.selectcode.sms.iam.domain.AppUser;
-import com.selectcode.sms.iam.infra.AppUserRepository;
-import com.selectcode.sms.support.IntegrationTest;
-import com.selectcode.sms.support.TestData;
-import com.selectcode.sms.support.TestData.SeededSchool;
-import com.selectcode.sms.support.TestDatabase;
+import com.tirvextech.sms.iam.domain.AppUser;
+import com.tirvextech.sms.iam.infra.AppUserRepository;
+import com.tirvextech.sms.support.IntegrationTest;
+import com.tirvextech.sms.support.TestData;
+import com.tirvextech.sms.support.TestData.SeededSchool;
+import com.tirvextech.sms.support.TestDatabase;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;

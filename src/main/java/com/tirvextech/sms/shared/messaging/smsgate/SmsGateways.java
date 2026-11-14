@@ -1,6 +1,6 @@
-package com.selectcode.sms.shared.messaging.smsgate;
+package com.tirvextech.sms.shared.messaging.smsgate;
 
-import com.selectcode.sms.shared.tenant.TenantContext;
+import com.tirvextech.sms.shared.tenant.TenantContext;
 import java.security.SecureRandom;
 import java.sql.ResultSet;
 import java.sql.SQLException;

@@ -1,4 +1,4 @@
-package com.selectcode.sms.students;
+package com.tirvextech.sms.students;
 
 import java.time.LocalDate;
 

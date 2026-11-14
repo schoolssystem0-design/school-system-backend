@@ -1,4 +1,4 @@
-package com.selectcode.sms.shared.files;
+package com.tirvextech.sms.shared.files;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 

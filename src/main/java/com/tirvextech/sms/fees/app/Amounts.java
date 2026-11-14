@@ -1,7 +1,7 @@
-package com.selectcode.sms.fees.app;
+package com.tirvextech.sms.fees.app;
 
-import com.selectcode.sms.shared.money.Money;
-import com.selectcode.sms.shared.web.ApiException;
+import com.tirvextech.sms.shared.money.Money;
+import com.tirvextech.sms.shared.web.ApiException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneId;

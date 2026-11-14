@@ -1,4 +1,4 @@
-package com.selectcode.sms.shared.messaging;
+package com.tirvextech.sms.shared.messaging;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -68,7 +68,7 @@ public class EmailSetup {
 		}
 		String fromName = text(env.getProperty("app.mail.from-name"));
 		if (fromName.isEmpty()) {
-			fromName = "School Management System";
+			fromName = "Tirvex Tech School System";
 		}
 		String webBaseUrl = text(env.getProperty("app.web-base-url")).replaceAll("/+$", "");
 

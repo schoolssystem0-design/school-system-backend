@@ -1,19 +1,19 @@
-package com.selectcode.sms.attendance.app;
+package com.tirvextech.sms.attendance.app;
 
-import com.selectcode.sms.settings.SettingKey;
-import com.selectcode.sms.settings.SettingsService;
-import com.selectcode.sms.shared.audit.AuditService;
-import com.selectcode.sms.communication.MessageTemplates;
-import com.selectcode.sms.shared.messaging.MessageOutbox;
-import com.selectcode.sms.shared.money.MoneyInput;
-import com.selectcode.sms.shared.security.CurrentActor;
-import com.selectcode.sms.shared.security.Permissions;
-import com.selectcode.sms.shared.tenant.TenantContext;
-import com.selectcode.sms.shared.validation.PakFormats;
-import com.selectcode.sms.shared.web.ApiException;
-import com.selectcode.sms.shared.year.AcademicYearLookup.YearRef;
-import com.selectcode.sms.shared.year.WorkingDayCalendar;
-import com.selectcode.sms.shared.year.YearContext;
+import com.tirvextech.sms.settings.SettingKey;
+import com.tirvextech.sms.settings.SettingsService;
+import com.tirvextech.sms.shared.audit.AuditService;
+import com.tirvextech.sms.communication.MessageTemplates;
+import com.tirvextech.sms.shared.messaging.MessageOutbox;
+import com.tirvextech.sms.shared.money.MoneyInput;
+import com.tirvextech.sms.shared.security.CurrentActor;
+import com.tirvextech.sms.shared.security.Permissions;
+import com.tirvextech.sms.shared.tenant.TenantContext;
+import com.tirvextech.sms.shared.validation.PakFormats;
+import com.tirvextech.sms.shared.web.ApiException;
+import com.tirvextech.sms.shared.year.AcademicYearLookup.YearRef;
+import com.tirvextech.sms.shared.year.WorkingDayCalendar;
+import com.tirvextech.sms.shared.year.YearContext;
 import java.sql.Date;
 import java.sql.Time;
 import java.time.Clock;
@@ -257,7 +257,7 @@ public class RegisterService {
 			// Pointless after the day is over: the phone drops it rather than alarming a parent the next morning.
 			java.time.Instant endOfDay = date.plusDays(1).atStartOfDay(java.time.ZoneId.of("Asia/Karachi")).toInstant();
 			outbox.queueSms(phone, templates.render(MessageTemplates.Code.ATTENDANCE_ABSENT, Map.of("name",
-					(String) s.get("name"), "date", com.selectcode.sms.shared.pdf.PdfKit.date(date)),
+					(String) s.get("name"), "date", com.tirvextech.sms.shared.pdf.PdfKit.date(date)),
 					MessageTemplates.language((String) s.get("message_language"))), "ATTENDANCE_ABSENT", "student", studentId,
 					absenceKey(studentId, date), null, endOfDay);
 		}

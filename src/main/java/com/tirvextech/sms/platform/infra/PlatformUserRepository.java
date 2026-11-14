@@ -1,6 +1,6 @@
-package com.selectcode.sms.platform.infra;
+package com.tirvextech.sms.platform.infra;
 
-import com.selectcode.sms.platform.domain.PlatformUser;
+import com.tirvextech.sms.platform.domain.PlatformUser;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

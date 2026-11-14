@@ -1,8 +1,8 @@
-package com.selectcode.sms.shared.messaging;
+package com.tirvextech.sms.shared.messaging;
 
-import com.selectcode.sms.shared.messaging.smsgate.SmsGateClient;
-import com.selectcode.sms.shared.messaging.smsgate.SmsGateways;
-import com.selectcode.sms.shared.tenant.TenantContext;
+import com.tirvextech.sms.shared.messaging.smsgate.SmsGateClient;
+import com.tirvextech.sms.shared.messaging.smsgate.SmsGateways;
+import com.tirvextech.sms.shared.tenant.TenantContext;
 import java.security.SecureRandom;
 import java.sql.Timestamp;
 import java.time.Clock;

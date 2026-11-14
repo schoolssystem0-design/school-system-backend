@@ -1,4 +1,4 @@
-package com.selectcode.sms.shared.security;
+package com.tirvextech.sms.shared.security;
 
 import java.util.Optional;
 import org.springframework.security.core.Authentication;

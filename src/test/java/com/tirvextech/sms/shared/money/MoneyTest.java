@@ -1,4 +1,4 @@
-package com.selectcode.sms.shared.money;
+package com.tirvextech.sms.shared.money;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

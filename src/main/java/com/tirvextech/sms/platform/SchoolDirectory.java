@@ -1,8 +1,8 @@
-package com.selectcode.sms.platform;
+package com.tirvextech.sms.platform;
 
-import com.selectcode.sms.platform.domain.School;
-import com.selectcode.sms.platform.infra.SchoolRepository;
-import com.selectcode.sms.shared.tenant.SchoolLookup;
+import com.tirvextech.sms.platform.domain.School;
+import com.tirvextech.sms.platform.infra.SchoolRepository;
+import com.tirvextech.sms.shared.tenant.SchoolLookup;
 import java.util.Locale;
 import java.util.Optional;
 import org.springframework.stereotype.Service;

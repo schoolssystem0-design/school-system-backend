@@ -1,15 +1,15 @@
-package com.selectcode.sms.school.api;
+package com.tirvextech.sms.school.api;
 
-import com.selectcode.sms.school.app.AcademicYearService;
-import com.selectcode.sms.school.app.AcademicYearService.YearView;
-import com.selectcode.sms.school.app.CalendarService;
-import com.selectcode.sms.school.app.SchoolProfileService;
-import com.selectcode.sms.school.domain.CalendarDayOff;
-import com.selectcode.sms.school.infra.SchoolProfileStore.Profile;
-import com.selectcode.sms.school.infra.SchoolProfileStore.Signature;
-import com.selectcode.sms.school.infra.WorkingDayStore.DayType;
-import com.selectcode.sms.shared.security.AnyAuthenticated;
-import com.selectcode.sms.shared.security.Permissions;
+import com.tirvextech.sms.school.app.AcademicYearService;
+import com.tirvextech.sms.school.app.AcademicYearService.YearView;
+import com.tirvextech.sms.school.app.CalendarService;
+import com.tirvextech.sms.school.app.SchoolProfileService;
+import com.tirvextech.sms.school.domain.CalendarDayOff;
+import com.tirvextech.sms.school.infra.SchoolProfileStore.Profile;
+import com.tirvextech.sms.school.infra.SchoolProfileStore.Signature;
+import com.tirvextech.sms.school.infra.WorkingDayStore.DayType;
+import com.tirvextech.sms.shared.security.AnyAuthenticated;
+import com.tirvextech.sms.shared.security.Permissions;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -61,13 +61,13 @@ class SchoolController {
 
 	private final CalendarService calendar;
 
-	private final com.selectcode.sms.school.app.RolloverService rollover;
+	private final com.tirvextech.sms.school.app.RolloverService rollover;
 
 	record RolloverRequest(@NotNull Long fromYearId, @NotNull java.util.Set<String> items) {
 	}
 
 	SchoolController(SchoolProfileService profiles, AcademicYearService years, CalendarService calendar,
-			com.selectcode.sms.school.app.RolloverService rollover) {
+			com.tirvextech.sms.school.app.RolloverService rollover) {
 		this.profiles = profiles;
 		this.years = years;
 		this.calendar = calendar;
@@ -76,14 +76,14 @@ class SchoolController {
 
 	@PreAuthorize("hasAuthority('" + Permissions.SCHOOL_YEAR_MANAGE + "')")
 	@GetMapping("/rollover/options")
-	List<com.selectcode.sms.school.app.RolloverService.Option> rolloverOptions() {
+	List<com.tirvextech.sms.school.app.RolloverService.Option> rolloverOptions() {
 		return rollover.options();
 	}
 
 	/** Carry classes' subjects, teachers, working week… into a new year (FR 1.3). */
 	@PreAuthorize("hasAuthority('" + Permissions.SCHOOL_YEAR_MANAGE + "')")
 	@PostMapping("/years/{id}/rollover")
-	com.selectcode.sms.school.app.RolloverService.RolloverResult rollover(@PathVariable long id,
+	com.tirvextech.sms.school.app.RolloverService.RolloverResult rollover(@PathVariable long id,
 			@Valid @RequestBody RolloverRequest body) {
 		return rollover.rollover(body.fromYearId(), id, body.items());
 	}

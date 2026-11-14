@@ -1,8 +1,8 @@
-package com.selectcode.sms.shared.pdf;
+package com.tirvextech.sms.shared.pdf;
 
-import com.selectcode.sms.shared.persistence.NumberSequences;
-import com.selectcode.sms.shared.security.CurrentActor;
-import com.selectcode.sms.shared.tenant.TenantContext;
+import com.tirvextech.sms.shared.persistence.NumberSequences;
+import com.tirvextech.sms.shared.security.CurrentActor;
+import com.tirvextech.sms.shared.tenant.TenantContext;
 import java.util.List;
 import java.util.Map;
 import org.springframework.jdbc.core.JdbcTemplate;

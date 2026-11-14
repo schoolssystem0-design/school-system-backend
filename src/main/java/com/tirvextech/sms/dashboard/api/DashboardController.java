@@ -1,8 +1,8 @@
-package com.selectcode.sms.dashboard.api;
+package com.tirvextech.sms.dashboard.api;
 
-import com.selectcode.sms.dashboard.app.DashboardService;
-import com.selectcode.sms.dashboard.app.DashboardService.Dashboard;
-import com.selectcode.sms.dashboard.app.DashboardService.Favourite;
+import com.tirvextech.sms.dashboard.app.DashboardService;
+import com.tirvextech.sms.dashboard.app.DashboardService.Dashboard;
+import com.tirvextech.sms.dashboard.app.DashboardService.Favourite;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;

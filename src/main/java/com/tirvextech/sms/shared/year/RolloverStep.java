@@ -1,4 +1,4 @@
-package com.selectcode.sms.shared.year;
+package com.tirvextech.sms.shared.year;
 
 /**
  * One item that can be carried into a new academic year (FR 1.3): class subjects, teaching assignments, fee

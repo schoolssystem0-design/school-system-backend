@@ -1,6 +1,6 @@
-package com.selectcode.sms.iam.infra;
+package com.tirvextech.sms.iam.infra;
 
-import com.selectcode.sms.iam.domain.LoginEvent;
+import com.tirvextech.sms.iam.domain.LoginEvent;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 

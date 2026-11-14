@@ -1,6 +1,6 @@
-package com.selectcode.sms.iam.infra;
+package com.tirvextech.sms.iam.infra;
 
-import com.selectcode.sms.shared.tenant.TenantContext;
+import com.tirvextech.sms.shared.tenant.TenantContext;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.sql.Timestamp;

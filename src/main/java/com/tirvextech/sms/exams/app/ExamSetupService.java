@@ -1,15 +1,15 @@
-package com.selectcode.sms.exams.app;
+package com.tirvextech.sms.exams.app;
 
-import com.selectcode.sms.shared.audit.AuditService;
-import com.selectcode.sms.shared.events.SchoolCreatedEvent;
-import com.selectcode.sms.shared.security.CurrentActor;
-import com.selectcode.sms.shared.security.DataScope;
-import com.selectcode.sms.shared.tenant.TenantContext;
-import com.selectcode.sms.shared.validation.PakFormats;
-import com.selectcode.sms.shared.web.ApiException;
-import com.selectcode.sms.shared.year.AcademicYearLookup.YearRef;
-import com.selectcode.sms.shared.year.AcademicYearLookup;
-import com.selectcode.sms.shared.year.YearContext;
+import com.tirvextech.sms.shared.audit.AuditService;
+import com.tirvextech.sms.shared.events.SchoolCreatedEvent;
+import com.tirvextech.sms.shared.security.CurrentActor;
+import com.tirvextech.sms.shared.security.DataScope;
+import com.tirvextech.sms.shared.tenant.TenantContext;
+import com.tirvextech.sms.shared.validation.PakFormats;
+import com.tirvextech.sms.shared.web.ApiException;
+import com.tirvextech.sms.shared.year.AcademicYearLookup.YearRef;
+import com.tirvextech.sms.shared.year.AcademicYearLookup;
+import com.tirvextech.sms.shared.year.YearContext;
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Time;

@@ -1,9 +1,9 @@
-package com.selectcode.sms.shared.messaging.smsgate;
+package com.tirvextech.sms.shared.messaging.smsgate;
 
-import com.selectcode.sms.shared.audit.AuditService;
-import com.selectcode.sms.shared.messaging.MessageOutbox;
-import com.selectcode.sms.shared.security.PublicEndpoint;
-import com.selectcode.sms.shared.tenant.TenantContext;
+import com.tirvextech.sms.shared.audit.AuditService;
+import com.tirvextech.sms.shared.messaging.MessageOutbox;
+import com.tirvextech.sms.shared.security.PublicEndpoint;
+import com.tirvextech.sms.shared.tenant.TenantContext;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
