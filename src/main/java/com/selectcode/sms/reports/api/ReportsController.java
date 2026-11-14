@@ -35,7 +35,11 @@ class ReportsController {
 
 	private static final String VIEW = "hasAuthority('" + Permissions.REPORTS_VIEW + "')";
 
-	private static final String STAFF = "hasAuthority('" + Permissions.REPORTS_STAFF_VIEW + "') and hasAuthority('SCOPE_ALL')";
+	/** Student records and class lists: whoever may print student records or view reports. */
+	private static final String RECORDS = "hasAuthority('" + Permissions.STUDENTS_PRINT + "') or hasAuthority('"
+			+ Permissions.REPORTS_VIEW + "')";
+
+	private static final String STAFF ="hasAuthority('" + Permissions.REPORTS_STAFF_VIEW + "') and hasAuthority('SCOPE_ALL')";
 
 	private static final String SUPER_ADMIN = "hasAuthority('" + CurrentActor.SUPER_ADMIN_AUTHORITY + "')";
 
@@ -99,6 +103,21 @@ class ReportsController {
 	ResponseEntity<byte[]> teacherFile(@RequestParam long staffId, @RequestParam LocalDate from, @RequestParam LocalDate to,
 			@RequestParam String format) {
 		return file(files.render(reports.teacher(staffId, from, to), format), "teacher-report", format);
+	}
+
+	/** One student's whole year as a file (details, family, classes, attendance, marks, results, fees). */
+	@PreAuthorize(RECORDS)
+	@GetMapping("/api/v1/reports/student-record/file")
+	ResponseEntity<byte[]> studentRecordFile(@RequestParam long studentId, @RequestParam String format) {
+		return file(files.render(reports.studentRecord(studentId), format), "student-record", format);
+	}
+
+	/** The students of a class or a section, one row each, as a file. */
+	@PreAuthorize(RECORDS)
+	@GetMapping("/api/v1/reports/class-list/file")
+	ResponseEntity<byte[]> classListFile(@RequestParam(required = false) Long classId,
+			@RequestParam(required = false) Long sectionId, @RequestParam String format) {
+		return file(files.render(reports.classList(classId, sectionId), format), "class-list", format);
 	}
 
 	/** Any signed-in school user: it only returns the tables the screen already shows them, as a file. */

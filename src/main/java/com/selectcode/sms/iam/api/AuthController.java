@@ -45,7 +45,8 @@ class AuthController {
 			@NotBlank @Size(max = 200) String password) {
 	}
 
-	record SchoolInfo(long id, String code, String name, Long logoFileId) {
+	/** {@code trialEndsAt}: end of the school's free trial, or null for full access. */
+	record SchoolInfo(long id, String code, String name, Long logoFileId, Instant trialEndsAt) {
 	}
 
 	/** Who is signed in and what they may do. Used by the app to build menus (the API still checks every call). */
@@ -91,9 +92,12 @@ class AuthController {
 
 	private final com.selectcode.sms.iam.app.UserAdminService userAdmin;
 
+	private final com.selectcode.sms.shared.tenant.SchoolLookup schools;
+
 	AuthController(SignInService signInService, AccountService accounts, StepUpService stepUp,
 			SecurityContextRepository securityContextRepository, com.selectcode.sms.iam.app.ProfileImages images,
-			com.selectcode.sms.iam.app.UserAdminService userAdmin) {
+			com.selectcode.sms.iam.app.UserAdminService userAdmin, com.selectcode.sms.shared.tenant.SchoolLookup schools) {
+		this.schools = schools;
 		this.images = images;
 		this.userAdmin = userAdmin;
 		this.signInService = signInService;
@@ -124,7 +128,7 @@ class AuthController {
 		securityContextRepository.saveContext(context, request, response);
 		// Permissions are loaded on the next request; the app calls /me right after sign-in.
 		return new MeResponse("USER", principal.userId(), principal.displayName(), principal.username(),
-				new SchoolInfo(principal.schoolId(), principal.schoolCode(), principal.schoolName(), null), false, List.of(),
+				new SchoolInfo(principal.schoolId(), principal.schoolCode(), principal.schoolName(), null, null), false, List.of(),
 				false, null, null);
 	}
 
@@ -141,7 +145,8 @@ class AuthController {
 			.toList();
 		SchoolInfo school = actor.tenantSchoolId() == null ? null
 				: new SchoolInfo(actor.tenantSchoolId(), actor.schoolCode(), actor.schoolName(),
-						images.schoolLogo(actor.tenantSchoolId()));
+						images.schoolLogo(actor.tenantSchoolId()),
+						schools.findById(actor.tenantSchoolId()).map(s -> s.trialEndsAt()).orElse(null));
 		Long photo = actor.actorType() == com.selectcode.sms.shared.security.ActorType.USER
 				? images.userPhoto(actor.actorId()) : null;
 		return new MeResponse(actor.actorType().name(), actor.actorId(), actor.displayName(), actor.loginName(), school,

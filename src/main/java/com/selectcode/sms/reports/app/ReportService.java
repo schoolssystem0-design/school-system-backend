@@ -311,6 +311,244 @@ public class ReportService {
 		return new Section("Fee status today", null, List.of(money("Outstanding"), money("Of which overdue")), rows);
 	}
 
+	// ------------------------------------------------------- student record
+
+	/**
+	 * Everything about one student for the selected academic year, as one file: details, family, class history,
+	 * attendance by month, tests, results and (with fee access) fees and payments. Private details (phones, address,
+	 * CNIC/B-Form) appear only for users who may see them; teachers only for students of the sections they teach.
+	 */
+	@Transactional(readOnly = true)
+	public ReportDoc studentRecord(long studentId) {
+		YearRef year = yearContext.requireSelected();
+		Period p = new Period(year, year.startDate(), year.endDate(), null, null);
+		Map<String, Object> s = jdbc.queryForList("""
+				select s.gr_no, s.name, s.gender, s.dob, s.place_of_birth, s.b_form_no, s.religion, s.nationality, s.phone,
+				       s.address, s.admission_date, s.status, s.left_date, s.previous_school, s.study_group,
+				       f.family_no, f.father_name, f.father_cnic, f.father_phone, f.father_profession, f.mother_name,
+				       f.mother_phone, f.email, f.address as family_address, f.emergency_name, f.emergency_phone
+				from student s join family f on f.id = s.family_id where s.id = ?""", studentId).stream().findFirst()
+			.orElseThrow(() -> ApiException.notFound("Student"));
+		List<Map<String, Object>> history = jdbc.queryForList("""
+				select y.name as year_name, e.academic_year_id, e.section_id, e.effective_from, e.effective_to
+				from enrolment e join academic_year y on y.id = e.academic_year_id
+				where e.student_id = ? order by e.effective_from""", studentId);
+		Set<Long> allowed = allowedSections(p);
+		if (allowed != null && history.stream().noneMatch(h -> year.id() == ((Number) h.get("academic_year_id")).longValue()
+				&& allowed.contains(((Number) h.get("section_id")).longValue()))) {
+			throw ApiException.notFound("Student");
+		}
+		boolean privateOk = CurrentActor.hasPermission(Permissions.STUDENTS_PRIVATE_VIEW);
+		List<Section> out = new ArrayList<>();
+
+		List<List<String>> details = new ArrayList<>();
+		details.add(row("GR no.", s.get("gr_no")));
+		details.add(row("Name", s.get("name")));
+		details.add(row("Gender", "FEMALE".equals(s.get("gender")) ? "Female" : "Male"));
+		details.add(row("Date of birth", date(s.get("dob"))));
+		details.add(row("Place of birth", s.get("place_of_birth")));
+		if (privateOk) {
+			details.add(row("B-Form no.", s.get("b_form_no")));
+		}
+		details.add(row("Religion", s.get("religion")));
+		details.add(row("Nationality", s.get("nationality")));
+		if (privateOk) {
+			details.add(row("Phone", s.get("phone")));
+			details.add(row("Address", s.get("address")));
+		}
+		details.add(row("Admission date", date(s.get("admission_date"))));
+		details.add(row("Status", "LEFT".equals(s.get("status")) ? "Left on " + date(s.get("left_date")) : "Studying"));
+		details.add(row("Previous school", s.get("previous_school")));
+		details.add(row("Study group", s.get("study_group")));
+		out.add(new Section("Student details", null, List.of(text("Field"), text("Value")), withValues(details)));
+
+		List<List<String>> family = new ArrayList<>();
+		family.add(row("Family no.", s.get("family_no")));
+		family.add(row("Father's name", s.get("father_name")));
+		family.add(row("Father's profession", s.get("father_profession")));
+		family.add(row("Mother's name", s.get("mother_name")));
+		if (privateOk) {
+			family.add(row("Father's CNIC", s.get("father_cnic")));
+			family.add(row("Father's mobile", s.get("father_phone")));
+			family.add(row("Mother's mobile", s.get("mother_phone")));
+			family.add(row("Email", s.get("email")));
+			family.add(row("Home address", s.get("family_address")));
+			family.add(row("Emergency contact", join(s.get("emergency_name"), s.get("emergency_phone"))));
+		}
+		out.add(new Section("Family and contacts", privateOk ? null : "Phone numbers and addresses are hidden for your role.",
+				List.of(text("Field"), text("Value")), withValues(family)));
+
+		out.add(new Section("Class history", null, List.of(text("Academic year"), text("Class"), text("From"), text("To")),
+				history.stream().map(h -> row(h.get("year_name"),
+						structure.findSection(((Number) h.get("section_id")).longValue()).map(SectionRef::label).orElse("-"),
+						date(h.get("effective_from")), h.get("effective_to") == null ? "Now" : date(h.get("effective_to")))).toList()));
+
+		List<List<String>> months = new ArrayList<>();
+		jdbc.query("""
+				select date_trunc('month', att_date)::date, count(*) filter (where status = 'P'), count(*) filter (where status = 'L'),
+				       count(*) filter (where status = 'HD'), count(*) filter (where status = 'A'), count(*) filter (where status = 'LV')
+				from student_attendance where student_id = ? and att_date between ? and ? group by 1 order by 1""", rs -> {
+			Counts c = new Counts(rs.getInt(2), rs.getInt(3), rs.getInt(4), rs.getInt(5), rs.getInt(6));
+			months.add(row(MONTH.format(rs.getDate(1).toLocalDate()), c.present(), c.late(), c.half(), c.absent(), c.leave(),
+					c.percent()));
+		}, studentId, Date.valueOf(p.from()), Date.valueOf(p.to()));
+		if (!months.isEmpty()) {
+			Counts all = counts("student_attendance", "student_id = ? and att_date between ? and ?", studentId,
+					Date.valueOf(p.from()), Date.valueOf(p.to()));
+			months.add(row("Whole year", all.present(), all.late(), all.half(), all.absent(), all.leave(), all.percent()));
+		}
+		out.add(new Section("Attendance by month", null, List.of(text("Month"), number("Present"), number("Late"),
+				number("Half day"), number("Absent"), number("Leave"), percent("%")), months));
+
+		Section tests = testsSection(studentId, p);
+		out.add(new Section("Test marks", null, tests.columns(), tests.rows()));
+		List<List<String>> subjects = new ArrayList<>();
+		subjectPercents(studentId, p.from(), p.to()).forEach((subject, value) -> subjects.add(row(subject, value)));
+		out.add(new Section("Marks by subject (%)", "Absent counts as 0.", List.of(text("Subject"), percent("%")), subjects));
+		out.add(publishedResults(studentId, p));
+
+		if (feesAllowed()) {
+			List<List<String>> fees = new ArrayList<>();
+			BigDecimal[] sum = { BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO };
+			jdbc.query("""
+					select bill_no, description, due_date, net + adjusted, paid, balance from fee_line_status
+					where student_id = ? and academic_year_id = ? order by issue_date, bill_no, bill_line_id""", rs -> {
+				fees.add(row(rs.getString(1), rs.getString(2), PdfKit.date(rs.getDate(3).toLocalDate()),
+						MoneyInput.text(rs.getBigDecimal(4)), MoneyInput.text(rs.getBigDecimal(5)), MoneyInput.text(rs.getBigDecimal(6))));
+				sum[0] = sum[0].add(rs.getBigDecimal(4));
+				sum[1] = sum[1].add(rs.getBigDecimal(5));
+				sum[2] = sum[2].add(rs.getBigDecimal(6));
+			}, studentId, year.id());
+			if (!fees.isEmpty()) {
+				fees.add(row("Total", null, null, MoneyInput.text(sum[0]), MoneyInput.text(sum[1]), MoneyInput.text(sum[2])));
+			}
+			out.add(new Section("Fees this year", null, List.of(text("Bill no."), text("For"), text("Due"), money("Amount"),
+					money("Paid"), money("Balance")), fees));
+			out.add(new Section("Payments", "Amounts paid towards this student's fees.",
+					List.of(text("Date"), text("Receipt no."), money("Amount")), jdbc.query("""
+							select p.payment_date, p.receipt_no, sum(pa.amount)
+							from payment_allocation pa join payment p on p.id = pa.payment_id join bill_line bl on bl.id = pa.bill_line_id
+							join bill b on b.id = bl.bill_id
+							where bl.student_id = ? and b.academic_year_id = ? group by p.id, p.payment_date, p.receipt_no
+							order by p.payment_date, p.id""", (rs, i) -> row(PdfKit.date(rs.getDate(1).toLocalDate()), rs.getString(2),
+							MoneyInput.text(rs.getBigDecimal(3))), studentId, year.id())));
+		}
+		String current = history.stream().filter(h -> year.id() == ((Number) h.get("academic_year_id")).longValue())
+			.reduce((a, b) -> b)
+			.flatMap(h -> structure.findSection(((Number) h.get("section_id")).longValue()).map(SectionRef::label))
+			.orElse("Not enrolled this year");
+		return new ReportDoc("STUDENT RECORD", List.of(s.get("name") + " (GR " + s.get("gr_no") + "), " + current,
+				"Academic Year " + year.name() + ", printed on " + PdfKit.date(MoneyInput.today(clock))), out);
+	}
+
+	/** "1 student", "2 students". */
+	private static String count(long n, String word) {
+		return n + " " + word + (n == 1 ? "" : "s");
+	}
+
+	/** Leaves out details the school has not filled in. */
+	private static List<List<String>> withValues(List<List<String>> rows) {
+		return rows.stream().filter(r -> r.get(1) != null && !r.get(1).isBlank()).toList();
+	}
+
+	private static String date(Object value) {
+		return value == null ? null : PdfKit.date(((java.sql.Date) value).toLocalDate());
+	}
+
+	private static String join(Object a, Object b) {
+		String text = ((a == null ? "" : a + " ") + (b == null ? "" : b)).trim();
+		return text.isEmpty() ? null : text;
+	}
+
+	// ----------------------------------------------------------- class list
+
+	/**
+	 * The students of a class or section today (or on the year's last day), one row each, for printing or Excel.
+	 * Teachers get only the sections they teach; mobile numbers need private access, fee balances need fee access.
+	 */
+	@Transactional(readOnly = true)
+	public ReportDoc classList(Long classId, Long sectionId) {
+		YearRef year = yearContext.requireSelected();
+		Period p = new Period(year, year.startDate(), year.endDate(), null, null);
+		if ((classId == null) == (sectionId == null)) {
+			throw ApiException.businessRule("FIELD_REQUIRED", "Choose a class or a section");
+		}
+		List<SectionRef> sections;
+		String label;
+		if (sectionId != null) {
+			SectionRef one = structure.findSection(sectionId).orElseThrow(() -> ApiException.notFound("Section"));
+			sections = List.of(one);
+			label = one.label();
+		}
+		else {
+			label = structure.findClass(classId).orElseThrow(() -> ApiException.notFound("Class")).name();
+			sections = structure.sectionsOfClass(classId);
+		}
+		Set<Long> allowed = allowedSections(p);
+		List<SectionRef> shown = sections.stream().filter(sec -> allowed == null || allowed.contains(sec.id())).toList();
+		if (shown.isEmpty()) {
+			throw ApiException.notFound("Section");
+		}
+		if (shown.size() < sections.size()) {
+			label += " (the sections you teach)";
+		}
+		boolean several = shown.size() > 1;
+		boolean privateOk = CurrentActor.hasPermission(Permissions.STUDENTS_PRIVATE_VIEW);
+		boolean fees = feesAllowed();
+		LocalDate on = lastDay(p);
+		Map<Long, String> labels = new LinkedHashMap<>();
+		shown.forEach(sec -> labels.put(sec.id(), sec.label()));
+
+		List<Column> columns = new ArrayList<>(List.of(number("#"), text("GR no."), text("Student"), text("Gender"),
+				text("Date of birth"), text("Father's name")));
+		if (privateOk) {
+			columns.add(text("Father's mobile"));
+		}
+		if (several) {
+			columns.add(text("Section"));
+		}
+		columns.add(text("Admitted"));
+		columns.add(percent("Attendance %"));
+		if (fees) {
+			columns.add(money("Fees outstanding"));
+		}
+		List<List<String>> rows = new ArrayList<>();
+		jdbc.query("""
+				select s.gr_no, s.name, s.gender, s.dob, f.father_name, f.father_phone, e.section_id, s.admission_date,
+				       count(a.id) filter (where a.status = 'P'), count(a.id) filter (where a.status = 'L'),
+				       count(a.id) filter (where a.status = 'HD'), count(a.id) filter (where a.status = 'A'),
+				       count(a.id) filter (where a.status = 'LV'),
+				       (select coalesce(sum(v.balance), 0) from fee_line_status v where v.student_id = s.id and v.balance > 0)
+				from enrolment e join student s on s.id = e.student_id join family f on f.id = s.family_id
+				left join student_attendance a on a.student_id = s.id and a.att_date between ? and ?
+				where e.section_id = any (?) and e.effective_from <= ? and (e.effective_to is null or e.effective_to >= ?)
+				group by s.id, f.id, e.section_id order by e.section_id, s.name""", rs -> {
+			Counts c = new Counts(rs.getInt(9), rs.getInt(10), rs.getInt(11), rs.getInt(12), rs.getInt(13));
+			List<Object> r = new ArrayList<>(List.of(rows.size() + 1, rs.getString(1), rs.getString(2),
+					"FEMALE".equals(rs.getString(3)) ? "Female" : "Male"));
+			r.add(rs.getDate(4) == null ? null : PdfKit.date(rs.getDate(4).toLocalDate()));
+			r.add(rs.getString(5));
+			if (privateOk) {
+				r.add(rs.getString(6));
+			}
+			if (several) {
+				r.add(labels.get(rs.getLong(7)));
+			}
+			r.add(PdfKit.date(rs.getDate(8).toLocalDate()));
+			r.add(c.marked() == 0 ? null : c.percent());
+			if (fees) {
+				r.add(MoneyInput.text(rs.getBigDecimal(14)));
+			}
+			rows.add(row(r.toArray()));
+		}, Date.valueOf(p.from()), Date.valueOf(on), ids(List.copyOf(labels.keySet())), Date.valueOf(on), Date.valueOf(on));
+		long girls = rows.stream().filter(r -> "Female".equals(r.get(3))).count();
+		long boys = rows.size() - girls;
+		String note = count(rows.size(), "student") + " (" + count(boys, "boy") + ", " + count(girls, "girl") + ") on " + PdfKit.date(on)
+				+ ". Attendance is for this academic year so far.";
+		return new ReportDoc("CLASS LIST", List.of(label + (several ? " (" + shown.size() + " sections)" : ""),
+				"Academic Year " + year.name()), List.of(new Section("Students", note, columns, rows)));
+	}
+
 	// ---------------------------------------------------------------- teacher
 
 	/** One teacher's period from the records the system keeps (FR 15.3). */

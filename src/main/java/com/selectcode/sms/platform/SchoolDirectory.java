@@ -35,6 +35,6 @@ public class SchoolDirectory implements SchoolLookup {
 
 	private static SchoolRef ref(School school) {
 		return new SchoolRef(school.getId(), school.getCode(), school.getName(),
-				school.getStatus() == School.Status.ACTIVE);
+				school.getStatus() == School.Status.ACTIVE, school.getTrialEndsAt());
 	}
 }

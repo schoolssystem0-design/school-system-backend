@@ -32,6 +32,8 @@ public class ApiClient {
 
 	private String yearHeader;
 
+	private String remoteAddress;
+
 	public ApiClient(MockMvc mvc) {
 		this.mvc = mvc;
 	}
@@ -70,10 +72,24 @@ public class ApiClient {
 		return send(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete(url), true);
 	}
 
+	/** Multipart POST of one file (form field "file") with extra form fields. */
+	public ResultActions uploadForm(String url, String filename, byte[] content, java.util.Map<String, String> fields)
+			throws Exception {
+		var builder = multipart(url).file(new MockMultipartFile("file", filename, "application/octet-stream", content));
+		fields.forEach(builder::param);
+		return send(builder, true);
+	}
+
 	public ResultActions upload(String url, String purpose, String filename, byte[] content) throws Exception {
 		var builder = multipart(url).file(new MockMultipartFile("file", filename, "application/octet-stream", content))
 			.param("purpose", purpose);
 		return send(builder, true);
+	}
+
+	/** Pretend every request comes from this internet address (null = MockMvc's default). */
+	public ApiClient from(String address) {
+		this.remoteAddress = address;
+		return this;
 	}
 
 	/** Send {@code X-Academic-Year} on every request (null = current year). */
@@ -130,6 +146,13 @@ public class ApiClient {
 		}
 		if (yearHeader != null) {
 			builder.header("X-Academic-Year", yearHeader);
+		}
+		if (remoteAddress != null) {
+			String address = remoteAddress;
+			builder.with(request -> {
+				request.setRemoteAddr(address);
+				return request;
+			});
 		}
 		if (!cookies.isEmpty()) {
 			builder.cookie(cookies.values().toArray(new Cookie[0]));

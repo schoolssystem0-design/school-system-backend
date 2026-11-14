@@ -286,6 +286,70 @@ class ReportsIT extends IntegrationTest {
 	}
 
 	@Test
+	void studentRecordAndClassListAsPdfAndExcel() throws Exception {
+		String record = "/api/v1/reports/student-record/file?studentId=%d&format=".formatted(students.get(0));
+		byte[] pdf = admin.get(record + "pdf").andExpect(status().isOk()).andExpect(content().contentType("application/pdf"))
+			.andReturn().getResponse().getContentAsByteArray();
+		assertThat(new String(pdf, 0, 5, java.nio.charset.StandardCharsets.ISO_8859_1)).isEqualTo("%PDF-");
+		String text = allText(admin.get(record + "xlsx").andExpect(status().isOk()).andReturn().getResponse().getContentAsByteArray());
+		assertThat(text).contains("STUDENT RECORD", "Student details", "Amna", "001", "Family and contacts", "Father of Amna",
+				"Class history", "Class 5 - A", "Attendance by month", "Whole year", "Test marks", "Weekly", "Earlier",
+				"Marks by subject (%)", "Fees this year", "Payments");
+
+		String list = "/api/v1/reports/class-list/file?sectionId=%d&format=".formatted(sec5a);
+		byte[] listPdf = admin.get(list + "pdf").andExpect(status().isOk()).andReturn().getResponse().getContentAsByteArray();
+		assertThat(new String(listPdf, 0, 5, java.nio.charset.StandardCharsets.ISO_8859_1)).isEqualTo("%PDF-");
+		byte[] listXlsx = admin.get(list + "xlsx").andExpect(status().isOk()).andReturn().getResponse().getContentAsByteArray();
+		assertThat(allText(listXlsx)).contains("CLASS LIST", "Amna", "Bilal", "2 students (0 boys, 2 girls)", "Father's mobile",
+				"Fees outstanding").doesNotContain("Farah");
+		try (XSSFWorkbook book = new XSSFWorkbook(new ByteArrayInputStream(listXlsx))) {
+			// Row number as a number, then GR no. and name
+			Row amna = rowStarting(book.getSheetAt(0), "#");
+			Row first = book.getSheetAt(0).getRow(amna.getRowNum() + 1);
+			assertThat(first.getCell(0).getCellType()).isEqualTo(CellType.NUMERIC);
+			assertThat(first.getCell(1).getStringCellValue()).isEqualTo("001");
+			assertThat(first.getCell(2).getStringCellValue()).isEqualTo("Amna");
+		}
+		// The whole class: both sections, with a section column
+		String whole = allText(admin.get("/api/v1/reports/class-list/file?classId=%d&format=xlsx".formatted(class5))
+			.andExpect(status().isOk()).andReturn().getResponse().getContentAsByteArray());
+		assertThat(whole).contains("Amna", "Bilal", "Farah", "Section", "Class 5 - B");
+		admin.get("/api/v1/reports/class-list/file?format=pdf").andExpect(jsonPath("$.code").value("FIELD_REQUIRED"));
+	}
+
+	@Test
+	void studentRecordAndClassListFollowAccessRules() throws Exception {
+		// A teacher of 5-A: their students only, no private details, no fee figures
+		long userId = TestData.userWithPermissions(school, "rabia", "rabia-password-1", Permissions.REPORTS_VIEW, Permissions.FEES_VIEW);
+		TestDatabase.superuser().update("update app_user set staff_id = ?, data_scope = 'ASSIGNED_CLASSES' where id = ?", staffId, userId);
+		ApiClient teacher = new ApiClient(mvc);
+		teacher.login(school.code(), "rabia", "rabia-password-1").andExpect(status().isOk());
+		String list = allText(teacher.get("/api/v1/reports/class-list/file?sectionId=%d&format=xlsx".formatted(sec5a))
+			.andExpect(status().isOk()).andReturn().getResponse().getContentAsByteArray());
+		assertThat(list).contains("Amna").doesNotContain("Fees outstanding", "Father's mobile");
+		teacher.get("/api/v1/reports/class-list/file?sectionId=%d&format=pdf".formatted(sec5b)).andExpect(status().isNotFound());
+		String whole = allText(teacher.get("/api/v1/reports/class-list/file?classId=%d&format=xlsx".formatted(class5))
+			.andExpect(status().isOk()).andReturn().getResponse().getContentAsByteArray());
+		assertThat(whole).contains("the sections you teach", "Amna").doesNotContain("Farah");
+		String record = allText(teacher.get("/api/v1/reports/student-record/file?studentId=%d&format=xlsx".formatted(students.get(0)))
+			.andExpect(status().isOk()).andReturn().getResponse().getContentAsByteArray());
+		assertThat(record).contains("Amna", "hidden for your role").doesNotContain("Fees this year", "Father's mobile");
+		teacher.get("/api/v1/reports/student-record/file?studentId=%d&format=pdf".formatted(farah)).andExpect(status().isNotFound());
+
+		// "Print student records" alone is enough; without it or reports access, nothing
+		TestData.userWithPermissions(school, "office", "office-password-1", Permissions.STUDENTS_VIEW, Permissions.STUDENTS_PRINT);
+		ApiClient office = new ApiClient(mvc);
+		office.login(school.code(), "office", "office-password-1").andExpect(status().isOk());
+		office.get("/api/v1/reports/student-record/file?studentId=%d&format=pdf".formatted(students.get(0))).andExpect(status().isOk());
+		office.get("/api/v1/reports/class-list/file?sectionId=%d&format=pdf".formatted(sec5a)).andExpect(status().isOk());
+		TestData.userWithPermissions(school, "viewer", "viewer-password-1", Permissions.STUDENTS_VIEW);
+		ApiClient viewer = new ApiClient(mvc);
+		viewer.login(school.code(), "viewer", "viewer-password-1").andExpect(status().isOk());
+		viewer.get("/api/v1/reports/student-record/file?studentId=%d&format=pdf".formatted(students.get(0))).andExpect(status().isForbidden());
+		viewer.get("/api/v1/reports/class-list/file?sectionId=%d&format=pdf".formatted(sec5a)).andExpect(status().isForbidden());
+	}
+
+	@Test
 	void anotherSchoolGetsNothing() throws Exception {
 		SeededSchool other = TestData.school("RPO");
 		TestData.admin(other, "admin", "admin-password-1");

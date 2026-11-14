@@ -147,8 +147,12 @@ class StudentController {
 
 	private final YearContext yearContext;
 
+	private final com.selectcode.sms.students.app.StudentImport importer;
+
 	StudentController(StudentService students, StudentRecordsService records, PromotionService promotions,
-			StudentPrintService printing, CertificateRegister certificates, YearContext yearContext) {
+			StudentPrintService printing, CertificateRegister certificates, YearContext yearContext,
+			com.selectcode.sms.students.app.StudentImport importer) {
+		this.importer = importer;
 		this.students = students;
 		this.records = records;
 		this.promotions = promotions;
@@ -189,6 +193,55 @@ class StudentController {
 	}
 
 	// ------------------------------------------------------------- admission
+
+	private static final String ENROL = "hasAuthority('" + Permissions.ADMISSIONS_ENROL + "')";
+
+	private static final long MAX_IMPORT_BYTES = 5L * 1024 * 1024;
+
+	/** The Excel template for admitting many students at once. */
+	@PreAuthorize(ENROL)
+	@GetMapping("/import/template")
+	ResponseEntity<byte[]> importTemplate() {
+		return ResponseEntity.ok()
+			.contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+			.header(HttpHeaders.CONTENT_DISPOSITION,
+					ContentDisposition.attachment().filename("students-import-template.xlsx").build().toString())
+			.body(importer.template());
+	}
+
+	/** Checks a filled-in sheet and shows every row; admits nobody. */
+	@PreAuthorize(ENROL)
+	@PostMapping(value = "/import/check", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	com.selectcode.sms.students.app.StudentImport.ImportCheck checkImport(
+			@RequestParam("file") org.springframework.web.multipart.MultipartFile file, @RequestParam long sectionId,
+			@RequestParam java.time.LocalDate admissionDate) throws java.io.IOException {
+		try (var in = importFile(file)) {
+			return importer.check(in, sectionId, admissionDate);
+		}
+	}
+
+	/** Admits every student of the sheet into the section, or nobody if any row has a problem. */
+	@PreAuthorize(ENROL)
+	@PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	@ResponseStatus(HttpStatus.CREATED)
+	com.selectcode.sms.students.app.StudentImport.ImportResult importStudents(
+			@RequestParam("file") org.springframework.web.multipart.MultipartFile file, @RequestParam long sectionId,
+			@RequestParam java.time.LocalDate admissionDate) throws java.io.IOException {
+		try (var in = importFile(file)) {
+			return importer.importStudents(in, sectionId, admissionDate);
+		}
+	}
+
+	private static java.io.InputStream importFile(org.springframework.web.multipart.MultipartFile file)
+			throws java.io.IOException {
+		if (file.isEmpty()) {
+			throw ApiException.businessRule("FILE_EMPTY", "Choose the filled-in Excel file");
+		}
+		if (file.getSize() > MAX_IMPORT_BYTES) {
+			throw ApiException.businessRule("FILE_TOO_LARGE", "The Excel file must be smaller than 5 MB");
+		}
+		return file.getInputStream();
+	}
 
 	@PreAuthorize("hasAuthority('" + Permissions.ADMISSIONS_ENROL + "')")
 	@PostMapping

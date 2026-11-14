@@ -40,6 +40,10 @@ public class School {
 	@Column(nullable = false, length = 64)
 	private String timezone = "Asia/Karachi";
 
+	/** End of the free trial; null = full (paid) access. */
+	@Column(name = "trial_ends_at")
+	private Instant trialEndsAt;
+
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt = Instant.now();
 
@@ -67,6 +71,23 @@ public class School {
 		status = Status.ACTIVE;
 		suspendedReason = null;
 		updatedAt = now;
+	}
+
+	/** Full access from now on: the free trial is over (the school became a customer). */
+	public void endTrial(Instant now) {
+		trialEndsAt = null;
+		updatedAt = now;
+	}
+
+	/** Moves the end of the trial; an ended trial starts again from now. */
+	public void extendTrial(int days, Instant now) {
+		Instant from = trialEndsAt == null || trialEndsAt.isBefore(now) ? now : trialEndsAt;
+		trialEndsAt = from.plus(java.time.Duration.ofDays(days));
+		updatedAt = now;
+	}
+
+	public Instant getTrialEndsAt() {
+		return trialEndsAt;
 	}
 
 	public Long getId() {

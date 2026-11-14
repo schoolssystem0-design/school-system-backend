@@ -77,6 +77,10 @@ public class SignInService {
 		if (!school.active()) {
 			throw new ApiException(HttpStatus.LOCKED, "SCHOOL_SUSPENDED", "This school's account is suspended");
 		}
+		if (school.trialEnded(clock.instant())) {
+			throw new ApiException(HttpStatus.LOCKED, "TRIAL_ENDED",
+					"This school's 14-day free trial has ended. Contact us to continue: all your data is kept.");
+		}
 		// Tenant is set before the transaction starts, so the connection gets the school's RLS context.
 		Outcome outcome = TenantContext.callAsSchool(school.id(), () -> transaction.execute(tx -> attempt(school, attempt)));
 		return switch (outcome) {

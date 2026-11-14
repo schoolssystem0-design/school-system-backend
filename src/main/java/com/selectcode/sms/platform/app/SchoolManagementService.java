@@ -40,8 +40,9 @@ public class SchoolManagementService {
 	public record SchoolCreated(long schoolId, String code, String name, SetupLink adminSetup) {
 	}
 
+	/** {@code trialEndsAt}: end of the free trial, or null for full (paid) access. */
 	public record SchoolView(long id, String code, String name, String status, String suspendedReason,
-			String timezone, Instant createdAt, List<DomainView> domains, long version) {
+			String timezone, Instant createdAt, List<DomainView> domains, long version, Instant trialEndsAt) {
 	}
 
 	public record DomainView(long id, String host, boolean verified, boolean primary) {
@@ -142,6 +143,35 @@ public class SchoolManagementService {
 		return view;
 	}
 
+	/** The trial school becomes a customer: full access from now on. */
+	public SchoolView endTrial(long id) {
+		return transaction.execute(tx -> {
+			School school = find(id);
+			if (school.getTrialEndsAt() == null) {
+				throw ApiException.businessRule("NOT_ON_TRIAL", "This school already has full access");
+			}
+			school.endTrial(clock.instant());
+			audit.recordPlatform("TRIAL_CONVERTED", id, null);
+			return view(school);
+		});
+	}
+
+	/** More trial days (an ended trial starts again from today). */
+	public SchoolView extendTrial(long id, int days) {
+		if (days < 1 || days > 90) {
+			throw ApiException.businessRule("DAYS_INVALID", "Extend by 1 to 90 days");
+		}
+		return transaction.execute(tx -> {
+			School school = find(id);
+			if (school.getTrialEndsAt() == null) {
+				throw ApiException.businessRule("NOT_ON_TRIAL", "This school already has full access");
+			}
+			school.extendTrial(days, clock.instant());
+			audit.recordPlatform("TRIAL_EXTENDED", id, Map.of("days", days, "until", school.getTrialEndsAt().toString()));
+			return view(school);
+		});
+	}
+
 	public SchoolView reactivate(long id) {
 		return transaction.execute(tx -> {
 			School school = find(id);
@@ -208,7 +238,8 @@ public class SchoolManagementService {
 			.map(d -> new DomainView(d.getId(), d.getHost(), d.isVerified(), d.isPrimary()))
 			.toList();
 		return new SchoolView(school.getId(), school.getCode(), school.getName(), school.getStatus().name(),
-				school.getSuspendedReason(), school.getTimezone(), school.getCreatedAt(), mapped, school.getVersion());
+				school.getSuspendedReason(), school.getTimezone(), school.getCreatedAt(), mapped, school.getVersion(),
+				school.getTrialEndsAt());
 	}
 
 	private static String required(String value, String field) {

@@ -79,6 +79,9 @@ class PlatformController {
 	record SuspendRequest(@NotBlank @Size(max = 500) String reason) {
 	}
 
+	record ExtendTrialRequest(@jakarta.validation.constraints.Min(1) @jakarta.validation.constraints.Max(90) int days) {
+	}
+
 	record DeleteSchoolRequest(@NotBlank @Size(max = 20) String confirmCode, @NotBlank @Size(max = 500) String reason) {
 	}
 
@@ -185,6 +188,19 @@ class PlatformController {
 	@PostMapping("/schools/{id}/suspend")
 	SchoolView suspend(@PathVariable long id, @Valid @RequestBody SuspendRequest body) {
 		return schools.suspend(id, body.reason());
+	}
+
+	/** The trial school becomes a customer: full access from now on. */
+	@PreAuthorize(SUPER_ADMIN)
+	@PostMapping("/schools/{id}/trial/end")
+	SchoolView endTrial(@PathVariable long id) {
+		return schools.endTrial(id);
+	}
+
+	@PreAuthorize(SUPER_ADMIN)
+	@PostMapping("/schools/{id}/trial/extend")
+	SchoolView extendTrial(@PathVariable long id, @Valid @RequestBody ExtendTrialRequest body) {
+		return schools.extendTrial(id, body.days());
 	}
 
 	@PreAuthorize(SUPER_ADMIN)

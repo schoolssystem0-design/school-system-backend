@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Per request: the user must still be active and the school not suspended; authorities are the user's current
+ * Per request: the user must still be active, the school not suspended and its free trial not ended; authorities are the user's current
  * permissions. A role change or deactivation therefore applies on the user's next click.
  */
 @Component
@@ -41,14 +41,16 @@ class SchoolUserRefresher implements PrincipalRefresher {
 	public Refreshed refresh(ActorPrincipal principal) {
 		SchoolUserPrincipal user = (SchoolUserPrincipal) principal;
 		List<Map<String, Object>> rows = jdbc.queryForList("""
-				select u.status as user_status, u.must_change_password, u.data_scope, s.status as school_status
+				select u.status as user_status, u.must_change_password, u.data_scope, s.status as school_status,
+				       (s.trial_ends_at is null or s.trial_ends_at > now()) as trial_ok
 				from app_user u join school s on s.id = u.school_id
 				where u.id = ? and u.school_id = ?""", user.userId(), user.schoolId());
 		if (rows.isEmpty()) {
 			return Refreshed.invalid();
 		}
 		Map<String, Object> row = rows.getFirst();
-		if (!"ACTIVE".equals(row.get("user_status")) || !"ACTIVE".equals(row.get("school_status"))) {
+		if (!"ACTIVE".equals(row.get("user_status")) || !"ACTIVE".equals(row.get("school_status"))
+				|| !Boolean.TRUE.equals(row.get("trial_ok"))) {
 			return Refreshed.invalid();
 		}
 		List<GrantedAuthority> authorities = new ArrayList<>();

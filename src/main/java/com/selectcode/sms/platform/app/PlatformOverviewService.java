@@ -23,7 +23,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 public class PlatformOverviewService {
 
 	public record SchoolRow(long id, String code, String name, String status, long users, long activeUsers,
-			Instant lastLoginAt, String currentYear, long classes, Instant createdAt) {
+			Instant lastLoginAt, String currentYear, long classes, Instant createdAt, Instant trialEndsAt) {
 	}
 
 	public record Overview(int schools, int activeSchools, long users, List<SchoolRow> rows) {
@@ -70,7 +70,7 @@ public class PlatformOverviewService {
 				return new SchoolRow(s.getId(), s.getCode(), s.getName(), s.getStatus().name(),
 						st == null ? 0 : st.users(), st == null ? 0 : st.activeUsers(),
 						st == null ? null : st.lastLoginAt(), currentYears.get(s.getId()),
-						classCounts.getOrDefault(s.getId(), 0L), s.getCreatedAt());
+						classCounts.getOrDefault(s.getId(), 0L), s.getCreatedAt(), s.getTrialEndsAt());
 			}).toList();
 			long totalUsers = rows.stream().mapToLong(SchoolRow::users).sum();
 			int active = (int) rows.stream().filter(r -> School.Status.ACTIVE.name().equals(r.status())).count();
