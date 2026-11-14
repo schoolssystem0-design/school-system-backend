@@ -77,8 +77,11 @@ class PaymentController {
 
 	private final FeeDocuments documents;
 
+	private final com.tirvextech.sms.fees.app.OfflineSnapshot offline;
+
 	PaymentController(PaymentService payments, AdjustmentService adjustments, OpenLines openLines,
-			FeeDocuments documents) {
+			FeeDocuments documents, com.tirvextech.sms.fees.app.OfflineSnapshot offline) {
+		this.offline = offline;
 		this.payments = payments;
 		this.adjustments = adjustments;
 		this.openLines = openLines;
@@ -128,6 +131,13 @@ class PaymentController {
 	@PostMapping("/payments/{id}/reverse")
 	PaymentView reverse(@PathVariable long id, @Valid @RequestBody ReverseRequest body) {
 		return payments.reverse(id, body.reason());
+	}
+
+	/** Students, families and open dues for collecting fees while the internet is down (kept on the device). */
+	@PreAuthorize(ADD)
+	@GetMapping("/offline-snapshot")
+	com.tirvextech.sms.fees.app.OfflineSnapshot.FeeSnapshot offlineSnapshot() {
+		return offline.snapshot();
 	}
 
 	@PreAuthorize(VIEW)

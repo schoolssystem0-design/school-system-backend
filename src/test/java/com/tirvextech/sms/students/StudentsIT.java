@@ -69,6 +69,45 @@ class StudentsIT extends IntegrationTest {
 	}
 
 	@Test
+	void anAdmissionSentTwiceWithItsKeyAdmitsTheChildOnce() throws Exception {
+		String body = """
+				{"student":{"name":"Offline Child","gender":"MALE"},"newFamily":{"fatherName":"Offline Father","fatherPhone":"0300-7770001"},
+				 "sectionId":%d,"admissionDate":"%s"}""".formatted(sec7a, yearStart);
+		var first = admin.postWithKey("/api/v1/students", body, "adm-key-1").andExpect(status().isCreated());
+		// The connection dropped after the server saved it: the device sends the same admission again
+		var again = admin.postWithKey("/api/v1/students", body, "adm-key-1").andExpect(status().is2xxSuccessful());
+		assertThat((Object) ApiClient.json(again, "$.id")).isEqualTo(ApiClient.json(first, "$.id"));
+		assertThat((Object) ApiClient.json(again, "$.grNo")).isEqualTo(ApiClient.json(first, "$.grNo"));
+		var db = TestDatabase.superuser();
+		assertThat(db.queryForObject("select count(*) from student where school_id = ? and name = 'Offline Child'", Long.class,
+				school.id())).isEqualTo(1);
+		assertThat(db.queryForObject("select count(*) from family where school_id = ? and father_name = 'Offline Father'",
+				Long.class, school.id())).isEqualTo(1);
+		// A different admission (another key) is a new child
+		admin.postWithKey("/api/v1/students", body.replace("Offline Child", "Offline Sister").replace("MALE", "FEMALE"), "adm-key-2")
+			.andExpect(status().isCreated()).andExpect(jsonPath("$.grNo").value(not((Object) ApiClient.json(first, "$.grNo"))));
+		// Without a key, admissions work as before
+		admit("No Key Child", "MALE", sec7a, "0300-7770002");
+	}
+
+	@Test
+	void theFamilyListForOfflineAdmissionsHidesMobilesWithoutPrivateAccess() throws Exception {
+		admit("Listed Child", "MALE", sec7a, "0300-7770003");
+		admin.get("/api/v1/families/offline-list").andExpect(status().isOk())
+			.andExpect(jsonPath("$[?(@.fatherName=='Father of Listed Child')].fatherPhone").value(hasItem("03007770003")))
+			.andExpect(jsonPath("$[?(@.fatherName=='Father of Listed Child')].children").value(hasItem(1)));
+		TestData.userWithPermissions(school, "clerk", "clerk-password-1", Permissions.ADMISSIONS_ENROL, Permissions.STUDENTS_VIEW);
+		ApiClient clerk = new ApiClient(mvc);
+		clerk.login(school.code(), "clerk", "clerk-password-1").andExpect(status().isOk());
+		clerk.get("/api/v1/families/offline-list").andExpect(status().isOk())
+			.andExpect(jsonPath("$[?(@.fatherName=='Father of Listed Child')].fatherPhone").value(not(hasItem("03007770003"))));
+		TestData.userWithPermissions(school, "reader", "reader-password-1", Permissions.STUDENTS_VIEW);
+		ApiClient reader = new ApiClient(mvc);
+		reader.login(school.code(), "reader", "reader-password-1").andExpect(status().isOk());
+		reader.get("/api/v1/families/offline-list").andExpect(status().isForbidden());
+	}
+
+	@Test
 	void admissionSearchAndClassStrength() throws Exception {
 		admin.get("/api/v1/students/suggest-gr").andExpect(jsonPath("$.grNo").value("001"));
 		long ali = admit("Ali Raza", "MALE", sec7a, "0300-1000001");

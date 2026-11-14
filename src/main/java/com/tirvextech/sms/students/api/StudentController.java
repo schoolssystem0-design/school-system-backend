@@ -246,10 +246,11 @@ class StudentController {
 	@PreAuthorize("hasAuthority('" + Permissions.ADMISSIONS_ENROL + "')")
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
-	StudentView admit(@Valid @RequestBody AdmitRequest body) {
+	StudentView admit(@Valid @RequestBody AdmitRequest body,
+			@org.springframework.web.bind.annotation.RequestHeader(value = "Idempotency-Key", required = false) String key) {
 		return students.admit(new Admission(body.student().toDetails(), body.familyId(),
 				body.newFamily() == null ? null : body.newFamily().toDetails(), body.sectionId(), body.admissionDate(),
-				body.enquiryId()));
+				body.enquiryId()), key);
 	}
 
 	// --------------------------------------------------------------- profile

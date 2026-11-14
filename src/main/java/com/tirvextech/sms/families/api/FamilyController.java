@@ -60,6 +60,13 @@ class FamilyController {
 		this.families = families;
 	}
 
+	/** All families (names, and mobiles where allowed) for admitting brothers and sisters offline. */
+	@PreAuthorize("hasAuthority('" + Permissions.ADMISSIONS_ENROL + "')")
+	@GetMapping("/offline-list")
+	java.util.List<FamilyRow> offlineList() {
+		return families.offlineList();
+	}
+
 	@PreAuthorize(VIEW)
 	@GetMapping
 	PageResponse<FamilyRow> search(@RequestParam(required = false) String q,

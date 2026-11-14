@@ -200,6 +200,36 @@ class FeesIT extends IntegrationTest {
 	// ------------------------------------------------------------------- tests
 
 	@Test
+	void offlineSnapshotMatchesTheLiveFigures() throws Exception {
+		long ali = admit("Ali Offline", sec5a, null);
+		long family = familyOf(ali);
+		long sister = admit("Sara Offline", sec5a, family);
+		run(admin, bills(month, tuition), "snap-run").andExpect(status().is2xxSuccessful());
+		pay(accountant, family, "1000", "snap-pay");
+
+		var snap = accountant.get("/api/v1/fees/offline-snapshot").andExpect(status().isOk());
+		java.util.List<Number> familyIds = ApiClient.json(snap, "$.students[?(@.id==" + ali + ")].familyId");
+		assertThat(familyIds.getFirst().longValue()).isEqualTo(family);
+		java.util.List<String> section = ApiClient.json(snap, "$.students[?(@.id==" + sister + ")].sectionName");
+		assertThat(section).containsExactly("A");
+		var ledger = admin.get("/api/v1/fees/families/" + family + "/ledger").andExpect(status().isOk());
+		java.util.List<String> owed = ApiClient.json(snap, "$.families[?(@.familyId==" + family + ")].owed");
+		java.util.List<String> balance = ApiClient.json(snap, "$.families[?(@.familyId==" + family + ")].balance");
+		assertThat(owed.getFirst()).isEqualTo(ApiClient.<String>json(ledger, "$.owed"));
+		assertThat(balance.getFirst()).isEqualTo(ApiClient.<String>json(ledger, "$.balance"));
+		var open = admin.get("/api/v1/fees/families/" + family + "/open-lines").andExpect(status().isOk());
+		java.util.List<Number> liveLines = ApiClient.json(open, "$[*].billLineId");
+		java.util.List<Number> snapLines = ApiClient.json(snap, "$.families[?(@.familyId==" + family + ")].lines[*].billLineId");
+		assertThat(snapLines).containsExactlyElementsOf(liveLines);
+
+		// Only staff who take payments may download it
+		TestData.userWithPermissions(school, "viewer", "viewer-password-1", Permissions.FEES_VIEW, Permissions.STUDENTS_VIEW);
+		ApiClient viewer = new ApiClient(mvc);
+		viewer.login(school.code(), "viewer", "viewer-password-1").andExpect(status().isOk());
+		viewer.get("/api/v1/fees/offline-snapshot").andExpect(status().isForbidden());
+	}
+
+	@Test
 	void billRunsAreIdempotentAndFlagMissingAmounts() throws Exception {
 		long ali = admit("Ali", sec5a, null);
 		long sara = admit("Sara", sec6a, null);

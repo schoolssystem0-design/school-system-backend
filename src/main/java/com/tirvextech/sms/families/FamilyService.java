@@ -90,6 +90,20 @@ public class FamilyService {
 		return PageResponse.of(rows, page, size, total == null ? 0 : total);
 	}
 
+	/**
+	 * Every family with its parents' names (mobiles only for those who may see them): kept on the device so a brother
+	 * or sister can be admitted into the right family while the internet is down.
+	 */
+	@Transactional(readOnly = true)
+	public List<FamilyRow> offlineList() {
+		boolean contacts = CurrentActor.hasPermission(Permissions.STUDENTS_PRIVATE_VIEW);
+		return jdbc.query("""
+				select f.id, f.family_no, f.father_name, f.father_phone, f.mother_name,
+				       (select count(*) from student s where s.family_id = f.id and s.status = 'ACTIVE')
+				from family f order by f.family_no""", (rs, i) -> new FamilyRow(rs.getLong(1), rs.getString(2),
+				rs.getString(3), contacts ? rs.getString(4) : null, rs.getString(5), rs.getLong(6)));
+	}
+
 	@Transactional(readOnly = true)
 	public FamilyView get(long id) {
 		return view(find(id));

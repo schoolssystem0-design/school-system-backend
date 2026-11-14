@@ -282,6 +282,19 @@ public class StudentService {
 	/** Admits a student in the selected (writable) academic year. */
 	@Transactional
 	public StudentView admit(Admission a) {
+		return admit(a, null);
+	}
+
+	/**
+	 * Admits a student; with an idempotency key (admissions made offline and sent later), the same key returns the
+	 * student admitted the first time instead of admitting the child again.
+	 */
+	@Transactional
+	public StudentView admit(Admission a, String idempotencyKey) {
+		String key = idempotencyKey == null || idempotencyKey.isBlank() ? null : idempotencyKey.trim();
+		if (key != null && key.length() > 100) {
+			throw ApiException.businessRule("IDEMPOTENCY_KEY_INVALID", "The Idempotency-Key is too long");
+		}
 		YearRef year = yearContext.requireWritable();
 		var section = structure.requireSection(a.sectionId());
 		if (!section.active()) {
@@ -294,6 +307,12 @@ public class StudentService {
 		// Serialise admissions of this school, so two at the same moment never get the same GR number.
 		jdbc.queryForObject("select pg_advisory_xact_lock(hashtext('gr-no'), ?::int)", Object.class,
 				TenantContext.requireSchoolId().intValue());
+		if (key != null) {
+			List<Long> earlier = jdbc.queryForList("select id from student where idempotency_key = ?", Long.class, key);
+			if (!earlier.isEmpty()) {
+				return get(earlier.getFirst());
+			}
+		}
 		String grNo = suggestGrNo();
 		long familyId;
 		if (a.familyId() != null) {
@@ -311,6 +330,9 @@ public class StudentService {
 		Student student = new Student(grNo, familyId, date, section.classId(), a.enquiryId());
 		student.apply(validate(a.details()), clock.instant());
 		student = students.save(student);
+		if (key != null) {
+			jdbc.update("update student set idempotency_key = ? where id = ?", key, student.getId());
+		}
 		LocalDate from = date.isBefore(year.startDate()) ? year.startDate() : date;
 		enrolments.create(student.getId(), year.id(), section.classId(), section.id(), from, null, "ADMISSION", null);
 		audit.record("STUDENT_ADMITTED", "student", student.getId(), null,
