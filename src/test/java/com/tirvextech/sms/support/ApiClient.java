@@ -103,10 +103,20 @@ public class ApiClient {
 				{"schoolCode":"%s","username":"%s","password":"%s"}""".formatted(schoolCode, username, password));
 	}
 
-	public ResultActions platformLogin(String email, String password, String totpSecret) throws Exception {
-		String code = totpSecret == null ? "" : Totp.codeAt(totpSecret, Instant.now());
+	/** {@code code}: 6-digit email sign-in code, or a TOTP secret (base32) for authenticator mode. */
+	public ResultActions platformLogin(String email, String password, String code) throws Exception {
+		if (code != null && code.matches("\\d{6}")) {
+			return post("/api/v1/platform/auth/login", """
+					{"email":"%s","password":"%s","emailCode":"%s"}""".formatted(email, password, code));
+		}
+		String totp = code == null ? "" : Totp.codeAt(code, Instant.now());
 		return post("/api/v1/platform/auth/login", """
-				{"email":"%s","password":"%s","totpCode":"%s"}""".formatted(email, password, code));
+				{"email":"%s","password":"%s","totpCode":"%s"}""".formatted(email, password, totp));
+	}
+
+	public ResultActions platformLoginStep1(String email, String password) throws Exception {
+		return post("/api/v1/platform/auth/login", """
+				{"email":"%s","password":"%s"}""".formatted(email, password));
 	}
 
 	/** Requests a step-up code (sent to the dev outbox in tests) and verifies it. */

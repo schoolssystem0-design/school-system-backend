@@ -58,6 +58,9 @@ server:
     include-message: never
 
 app:
+  platform:
+    # Super admin second step after password: email (default), totp (authenticator), or off
+    second-factor: ${APP_PLATFORM_SECOND_FACTOR:email}
   # Base URL of the Next.js app, used in emailed links (setup / password reset)
   web-base-url: ${APP_WEB_BASE_URL:http://localhost:3000}
   mail:

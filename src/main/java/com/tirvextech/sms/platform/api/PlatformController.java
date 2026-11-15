@@ -49,7 +49,7 @@ class PlatformController {
 	private static final String SUPER_ADMIN = "hasAuthority('" + CurrentActor.SUPER_ADMIN_AUTHORITY + "')";
 
 	record PlatformLoginRequest(@NotBlank @Email @Size(max = 254) String email, @NotBlank @Size(max = 200) String password,
-			@Size(max = 10) String totpCode) {
+			@Size(max = 10) String totpCode, @Size(max = 10) String emailCode) {
 	}
 
 	/** Either signed in ({@code status=SIGNED_IN}) or the authenticator must be set up ({@code ENROL_TOTP}). */
@@ -113,7 +113,7 @@ class PlatformController {
 	@PostMapping("/auth/login")
 	PlatformLoginResponse login(@Valid @RequestBody PlatformLoginRequest body, HttpServletRequest request,
 			HttpServletResponse response) {
-		var outcome = auth.signIn(body.email(), body.password(), body.totpCode(), request.getRemoteAddr(),
+		var outcome = auth.signIn(body.email(), body.password(), body.totpCode(), body.emailCode(), request.getRemoteAddr(),
 				request.getHeader(HttpHeaders.USER_AGENT), request.getSession(true));
 		return switch (outcome) {
 			case PlatformAuthService.Outcome.SignedIn signedIn -> {

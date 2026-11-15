@@ -32,6 +32,7 @@ public abstract class IntegrationTest {
 		registry.add("app.security.cookie-secure", () -> "false");
 		// Tests send queued messages explicitly (MessageOutbox.dispatchDue) so results are deterministic.
 		registry.add("app.outbox.auto-dispatch", () -> "false");
+		registry.add("app.platform.second-factor", () -> "totp");
 	}
 
 	/** All requests in tests come from 127.0.0.1; don't let one test's sign-ins throttle the next. */
