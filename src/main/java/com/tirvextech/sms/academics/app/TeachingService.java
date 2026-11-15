@@ -40,12 +40,13 @@ public class TeachingService {
 		}
 	}
 
+	/** locked: the automatic timetable keeps this period as it is. */
 	public record Period(int weekday, int periodNo, LocalTime startTime, LocalTime endTime, Long subjectId,
-			Long staffId) {
+			Long staffId, boolean locked) {
 	}
 
 	public record PeriodView(long sectionId, String sectionLabel, int weekday, int periodNo, LocalTime startTime,
-			LocalTime endTime, Long subjectId, String subjectName, Long staffId, String staffName) {
+			LocalTime endTime, Long subjectId, String subjectName, Long staffId, String staffName, boolean locked) {
 	}
 
 	private final JdbcTemplate jdbc;
@@ -227,7 +228,7 @@ public class TeachingService {
 	public List<PeriodView> timetable(long yearId, Long sectionId, Long staffId) {
 		StringBuilder sql = new StringBuilder("""
 				select t.section_id, c.name || ' - ' || s.name, t.weekday, t.period_no, t.start_time, t.end_time,
-				       t.subject_id, sub.name, t.staff_id, st.name
+				       t.subject_id, sub.name, t.staff_id, st.name, t.locked
 				from timetable_period t
 				join section s on s.id = t.section_id join school_class c on c.id = s.class_id
 				left join subject sub on sub.id = t.subject_id left join staff st on st.id = t.staff_id
@@ -244,7 +245,8 @@ public class TeachingService {
 		sql.append(" order by t.weekday, t.period_no, c.display_order");
 		return jdbc.query(sql.toString(), (rs, i) -> new PeriodView(rs.getLong(1), rs.getString(2), rs.getInt(3),
 				rs.getInt(4), rs.getObject(5, LocalTime.class), rs.getObject(6, LocalTime.class),
-				(Long) rs.getObject(7), rs.getString(8), (Long) rs.getObject(9), rs.getString(10)), args.toArray());
+				(Long) rs.getObject(7), rs.getString(8), (Long) rs.getObject(9), rs.getString(10), rs.getBoolean(11)),
+				args.toArray());
 	}
 
 	/**
@@ -256,11 +258,67 @@ public class TeachingService {
 	public List<PeriodView> saveTimetable(long yearId, long sectionId, List<Period> periods) {
 		YearRef year = writableYear(yearId);
 		var section = structure.requireSection(sectionId);
+		Map<Long, StaffService.StaffRef> teachers = new java.util.HashMap<>();
+		validate(year, section, periods, teachers);
+		for (Period p : periods) {
+			if (p.staffId() != null) {
+				List<String> clash = jdbc.queryForList("""
+						select c.name || ' - ' || s.name from timetable_period t
+						join section s on s.id = t.section_id join school_class c on c.id = s.class_id
+						where t.academic_year_id = ? and t.staff_id = ? and t.weekday = ? and t.period_no = ?
+						  and t.section_id <> ?""", String.class, yearId, p.staffId(), p.weekday(), p.periodNo(),
+						sectionId);
+				if (!clash.isEmpty()) {
+					throw ApiException.conflict("TEACHER_DOUBLE_BOOKED", teachers.get(p.staffId()).name()
+							+ " already teaches " + clash.getFirst() + " on " + dayName(p.weekday()) + ", period "
+							+ p.periodNo());
+				}
+			}
+		}
+		replace(yearId, sectionId, periods);
+		audit.record("TIMETABLE_SAVED", "section", sectionId, null, Map.of("periods", periods.size()));
+		return timetable(yearId, sectionId, null);
+	}
+
+	/**
+	 * Replaces the timetables of several sections at once (the automatic timetable). Each is checked like a single
+	 * save; clashes are checked across the whole school after all are written, so sections may swap teachers.
+	 */
+	@Transactional
+	public int saveTimetables(long yearId, Map<Long, List<Period>> bySection) {
+		YearRef year = writableYear(yearId);
+		Map<Long, StaffService.StaffRef> teachers = new java.util.HashMap<>();
+		for (var entry : bySection.entrySet()) {
+			validate(year, structure.requireSection(entry.getKey()), entry.getValue(), teachers);
+		}
+		int count = 0;
+		for (var entry : bySection.entrySet()) {
+			replace(yearId, entry.getKey(), entry.getValue());
+			count += entry.getValue().size();
+		}
+		List<String> clashes = jdbc.queryForList("""
+				select st.name || ' on ' || trim(to_char(date '2024-01-07' + t.weekday, 'Day')) || ', period ' || t.period_no
+				       || ' (' || string_agg(c.name || ' - ' || s.name, ' and ' order by c.display_order, s.name) || ')'
+				from timetable_period t join staff st on st.id = t.staff_id
+				join section s on s.id = t.section_id join school_class c on c.id = s.class_id
+				where t.academic_year_id = ?
+				group by st.name, t.staff_id, t.weekday, t.period_no having count(*) > 1
+				order by t.weekday, t.period_no""", String.class, yearId);
+		if (!clashes.isEmpty()) {
+			throw ApiException.conflict("TEACHER_DOUBLE_BOOKED", "A teacher would be in two sections at once: "
+					+ String.join("; ", clashes.subList(0, Math.min(5, clashes.size()))));
+		}
+		audit.record("TIMETABLE_GENERATED_SAVED", "academic_year", yearId, null,
+				Map.of("sections", bySection.size(), "periods", count));
+		return count;
+	}
+
+	private void validate(YearRef year, AcademicStructure.SectionRef section, List<Period> periods,
+			Map<Long, StaffService.StaffRef> teachers) {
 		Set<String> slots = new HashSet<>();
 		Set<Long> classSubjects = new HashSet<>(jdbc.queryForList("""
 				select subject_id from class_subject where academic_year_id = ? and class_id = ? and status = 'ACTIVE'""",
-				Long.class, yearId, section.classId()));
-		Map<Long, StaffService.StaffRef> teachers = new java.util.HashMap<>();
+				Long.class, year.id(), section.classId()));
 		for (Period p : periods) {
 			if (p.weekday() < 1 || p.weekday() > 7 || p.periodNo() < 1 || p.periodNo() > 15) {
 				throw ApiException.businessRule("PERIOD_INVALID", "Weekday 1-7 and period 1-15");
@@ -282,30 +340,22 @@ public class TeachingService {
 				if (!teacher.active()) {
 					throw ApiException.conflict("STAFF_LEFT", teacher.name() + " has left the school");
 				}
-				List<String> clash = jdbc.queryForList("""
-						select c.name || ' - ' || s.name from timetable_period t
-						join section s on s.id = t.section_id join school_class c on c.id = s.class_id
-						where t.academic_year_id = ? and t.staff_id = ? and t.weekday = ? and t.period_no = ?
-						  and t.section_id <> ?""", String.class, yearId, p.staffId(), p.weekday(), p.periodNo(),
-						sectionId);
-				if (!clash.isEmpty()) {
-					throw ApiException.conflict("TEACHER_DOUBLE_BOOKED", teacher.name() + " already teaches "
-							+ clash.getFirst() + " on " + dayName(p.weekday()) + ", period " + p.periodNo());
-				}
 			}
 		}
+	}
+
+	private void replace(long yearId, long sectionId, List<Period> periods) {
 		jdbc.update("delete from timetable_period where academic_year_id = ? and section_id = ?", yearId, sectionId);
 		long schoolId = TenantContext.requireSchoolId();
 		for (Period p : periods) {
 			jdbc.update("""
 					insert into timetable_period (school_id, academic_year_id, section_id, weekday, period_no, start_time,
-					                              end_time, subject_id, staff_id)
-					values (?, ?, ?, ?, ?, ?, ?, ?, ?)""", schoolId, yearId, sectionId, p.weekday(), p.periodNo(),
-					p.startTime(), p.endTime(), p.subjectId(), p.staffId());
+					                              end_time, subject_id, staff_id, locked)
+					values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", schoolId, yearId, sectionId, p.weekday(), p.periodNo(),
+					p.startTime(), p.endTime(), p.subjectId(), p.staffId(), p.locked());
 		}
-		audit.record("TIMETABLE_SAVED", "section", sectionId, null, Map.of("periods", periods.size()));
-		return timetable(yearId, sectionId, null);
 	}
+
 
 	// ---------------------------------------------------------------- helpers
 

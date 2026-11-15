@@ -43,6 +43,15 @@ public class ClassSubject extends TenantScopedEntity {
 	@Column(name = "display_order", nullable = false)
 	private int displayOrder;
 
+	/** Lessons a week, for the automatic timetable (null: not set). */
+	@Column(name = "periods_per_week", columnDefinition = "smallint")
+	@org.hibernate.annotations.JdbcTypeCode(java.sql.Types.SMALLINT)
+	private Integer periodsPerWeek;
+
+	/** Lessons come in pairs of back-to-back periods (labs, computer). */
+	@Column(name = "double_period", nullable = false)
+	private boolean doublePeriod;
+
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 10)
 	private ActiveStatus status = ActiveStatus.ACTIVE;
@@ -109,5 +118,18 @@ public class ClassSubject extends TenantScopedEntity {
 
 	public ActiveStatus getStatus() {
 		return status;
+	}
+
+	public Integer getPeriodsPerWeek() {
+		return periodsPerWeek;
+	}
+
+	public boolean isDoublePeriod() {
+		return doublePeriod;
+	}
+
+	public void setTimetable(Integer periodsPerWeek, boolean doublePeriod) {
+		this.periodsPerWeek = periodsPerWeek;
+		this.doublePeriod = doublePeriod;
 	}
 }

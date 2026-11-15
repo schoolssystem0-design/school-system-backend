@@ -52,10 +52,16 @@ public class AcademicsService {
 	}
 
 	public record ClassSubjectView(long id, long subjectId, String subjectName, BigDecimal maxMarks,
-			BigDecimal passingMarks, int displayOrder, String status) {
+			BigDecimal passingMarks, int displayOrder, String status, Integer periodsPerWeek, boolean doublePeriod) {
 	}
 
-	public record ClassSubjectInput(long subjectId, BigDecimal maxMarks, BigDecimal passingMarks) {
+	/** periodsPerWeek / doublePeriod are for the automatic timetable; null periods = not set. */
+	public record ClassSubjectInput(long subjectId, BigDecimal maxMarks, BigDecimal passingMarks, Integer periodsPerWeek,
+			boolean doublePeriod) {
+
+		public ClassSubjectInput(long subjectId, BigDecimal maxMarks, BigDecimal passingMarks) {
+			this(subjectId, maxMarks, passingMarks, null, false);
+		}
 	}
 
 	private final SchoolClassRepository classes;
@@ -267,7 +273,7 @@ public class AcademicsService {
 			.stream()
 			.map(cs -> new ClassSubjectView(cs.getId(), cs.getSubjectId(),
 					subjectById.get(cs.getSubjectId()).getName(), cs.getMaxMarks(), cs.getPassingMarks(),
-					cs.getDisplayOrder(), cs.getStatus().name()))
+					cs.getDisplayOrder(), cs.getStatus().name(), cs.getPeriodsPerWeek(), cs.isDoublePeriod()))
 			.toList();
 	}
 
@@ -291,6 +297,9 @@ public class AcademicsService {
 				throw ApiException.businessRule("SUBJECT_UNKNOWN", "Unknown subject");
 			}
 			validateMarks(in.maxMarks(), in.passingMarks());
+			if (in.periodsPerWeek() != null && (in.periodsPerWeek() < 0 || in.periodsPerWeek() > 60)) {
+				throw ApiException.businessRule("PERIODS_INVALID", "Periods a week must be between 0 and 60");
+			}
 		}
 		Map<Long, ClassSubject> existing = classSubjects
 			.findByAcademicYearIdAndClassIdOrderByDisplayOrderAsc(yearId, classId)
@@ -305,11 +314,13 @@ public class AcademicsService {
 			ClassSubjectInput in = inputs.get(i);
 			ClassSubject cs = existing.remove(in.subjectId());
 			if (cs == null) {
-				classSubjects.save(new ClassSubject(yearId, classId, in.subjectId(), in.maxMarks(), in.passingMarks(),
-						i + 1));
+				cs = new ClassSubject(yearId, classId, in.subjectId(), in.maxMarks(), in.passingMarks(), i + 1);
+				cs.setTimetable(in.periodsPerWeek(), in.doublePeriod());
+				classSubjects.save(cs);
 			}
 			else {
 				cs.change(in.maxMarks(), in.passingMarks(), i + 1, clock.instant());
+				cs.setTimetable(in.periodsPerWeek(), in.doublePeriod());
 			}
 		}
 		existing.values().forEach(cs -> cs.setStatus(ActiveStatus.INACTIVE, clock.instant()));

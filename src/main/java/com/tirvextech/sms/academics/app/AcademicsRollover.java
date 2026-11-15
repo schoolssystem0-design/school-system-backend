@@ -28,13 +28,40 @@ class AcademicsRollover {
 			public int copy(YearRef from, YearRef to) {
 				return jdbc.update("""
 						insert into class_subject (school_id, academic_year_id, class_id, subject_id, max_marks,
-						                           passing_marks, display_order, status)
-						select school_id, ?, class_id, subject_id, max_marks, passing_marks, display_order, status
+						                           passing_marks, display_order, status, periods_per_week, double_period)
+						select school_id, ?, class_id, subject_id, max_marks, passing_marks, display_order, status,
+						       periods_per_week, double_period
 						from class_subject cs
 						where academic_year_id = ? and status = 'ACTIVE'
 						  and not exists (select 1 from class_subject x where x.academic_year_id = ?
 						                  and x.class_id = cs.class_id and x.subject_id = cs.subject_id)""", to.id(),
 						from.id(), to.id());
+			}
+		};
+	}
+
+	@Bean
+	RolloverStep bellScheduleRollover(JdbcTemplate jdbc) {
+		return new RolloverStep() {
+			@Override
+			public String key() {
+				return "BELL_SCHEDULE";
+			}
+
+			@Override
+			public String label() {
+				return "Bell schedule (period and break times)";
+			}
+
+			@Override
+			public int copy(YearRef from, YearRef to) {
+				return jdbc.update("""
+						insert into bell_slot (school_id, academic_year_id, seq, kind, label, start_time, end_time, on_half_day)
+						select school_id, ?, seq, kind, label, start_time, end_time, on_half_day
+						from bell_slot b
+						where academic_year_id = ?
+						  and not exists (select 1 from bell_slot x where x.academic_year_id = ?)""", to.id(), from.id(),
+						to.id());
 			}
 		};
 	}

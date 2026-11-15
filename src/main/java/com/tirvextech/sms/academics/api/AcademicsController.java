@@ -50,7 +50,8 @@ class AcademicsController {
 	record ReorderRequest(@NotNull List<Long> classIds) {
 	}
 
-	record ClassSubjectRequest(@NotNull Long subjectId, @NotNull BigDecimal maxMarks, BigDecimal passingMarks) {
+	record ClassSubjectRequest(@NotNull Long subjectId, @NotNull BigDecimal maxMarks, BigDecimal passingMarks,
+			Integer periodsPerWeek, Boolean doublePeriod) {
 	}
 
 	private final AcademicsService academics;
@@ -178,7 +179,8 @@ class AcademicsController {
 	List<ClassSubjectView> saveClassSubjects(@PathVariable long yearId, @PathVariable long classId,
 			@Valid @RequestBody List<@Valid ClassSubjectRequest> body) {
 		return academics.saveClassSubjects(yearId, classId,
-				body.stream().map(r -> new ClassSubjectInput(r.subjectId(), r.maxMarks(), r.passingMarks())).toList());
+				body.stream().map(r -> new ClassSubjectInput(r.subjectId(), r.maxMarks(), r.passingMarks(), r.periodsPerWeek(),
+						Boolean.TRUE.equals(r.doublePeriod()))).toList());
 	}
 
 	private static long version(Long version) {

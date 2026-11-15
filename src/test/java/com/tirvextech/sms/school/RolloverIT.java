@@ -46,7 +46,7 @@ class RolloverIT extends IntegrationTest {
 
 		ApiClient admin = new ApiClient(mvc);
 		admin.login(school.code(), "admin", "admin-password-1").andExpect(status().isOk());
-		admin.get("/api/v1/school/rollover/options").andExpect(jsonPath("$.length()").value(3));
+		admin.get("/api/v1/school/rollover/options").andExpect(jsonPath("$.length()").value(4));
 		admin.post("/api/v1/school/years/" + to + "/rollover", """
 				{"fromYearId":%d,"items":["CLASS_SUBJECTS","TEACHING_ASSIGNMENTS","WORKING_WEEK"]}""".formatted(from))
 			.andExpect(status().isOk())
