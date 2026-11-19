@@ -96,8 +96,19 @@ class FakeSmsGate {
 			return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("message", "message already exists"));
 		}
 		String phone = body.path("phoneNumbers").path(0).asString();
-		Message m = new Message(id, user, phone, body.path("textMessage").path("text").asString(), Instant.now(), "Pending",
-				null);
+		String text;
+		if (!body.path("textMessage").path("text").isMissingNode()) {
+			text = body.path("textMessage").path("text").asString();
+		}
+		else if (!body.path("dataMessage").path("data").isMissingNode()
+				&& body.path("dataMessage").path("port").asInt() == TirvexVoice.DATA_PORT) {
+			text = new String(Base64.getDecoder().decode(body.path("dataMessage").path("data").asString()),
+					StandardCharsets.UTF_8);
+		}
+		else {
+			return ResponseEntity.unprocessableEntity().body(Map.of("message", "textMessage or voice dataMessage required"));
+		}
+		Message m = new Message(id, user, phone, text, Instant.now(), "Pending", null);
 		messages.put(id, m);
 		if (!offline.getOrDefault(user, false)) {
 			later(1, () -> progress(id));

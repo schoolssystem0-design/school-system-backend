@@ -1,10 +1,10 @@
 package com.tirvextech.sms.exams.app;
 
+import com.tirvextech.sms.communication.FamilyOutbox;
 import com.tirvextech.sms.communication.MessageTemplates;
 import com.tirvextech.sms.exams.app.TestMarksService.TestMarkRow;
 import com.tirvextech.sms.exams.app.TestMarksService.TestSheet;
 import com.tirvextech.sms.shared.audit.AuditService;
-import com.tirvextech.sms.shared.messaging.MessageOutbox;
 import com.tirvextech.sms.shared.web.ApiException;
 import java.util.List;
 import java.util.Map;
@@ -28,16 +28,16 @@ public class TestMarkMessages {
 
 	private final MessageTemplates templates;
 
-	private final MessageOutbox outbox;
+	private final FamilyOutbox familyOutbox;
 
 	private final AuditService audit;
 
-	TestMarkMessages(JdbcTemplate jdbc, TestMarksService tests, MessageTemplates templates, MessageOutbox outbox,
+	TestMarkMessages(JdbcTemplate jdbc, TestMarksService tests, MessageTemplates templates, FamilyOutbox familyOutbox,
 			AuditService audit) {
 		this.jdbc = jdbc;
 		this.tests = tests;
 		this.templates = templates;
-		this.outbox = outbox;
+		this.familyOutbox = familyOutbox;
 		this.audit = audit;
 	}
 
@@ -71,10 +71,11 @@ public class TestMarkMessages {
 			boolean urdu = MessageTemplates.ROMAN_URDU.equals(language);
 			String marks = row.absent() ? (urdu ? "ghair hazir" : "absent")
 					: row.obtained() + "/" + sheet.test().maxMarks() + (urdu ? " number" : "");
-			String body = templates.render(MessageTemplates.Code.TEST_MARKS, Map.of("name", row.name(), "subject",
-					sheet.test().subjectName(), "date", date, "marks", marks), language);
-			if (outbox.queueSms((String) family.getFirst().get("phone"), body, "TEST_MARKS", "class_test", testId,
-					"testmarks-" + testId + "-" + row.studentId())) {
+			if (familyOutbox.queueTemplated((String) family.getFirst().get("phone"),
+					(String) family.getFirst().get("preferred_channel"), (String) family.getFirst().get("message_language"),
+					MessageTemplates.Code.TEST_MARKS,
+					Map.of("name", row.name(), "subject", sheet.test().subjectName(), "date", date, "marks", marks),
+					"TEST_MARKS", "class_test", testId, "testmarks-" + testId + "-" + row.studentId())) {
 				queued++;
 			}
 			else {

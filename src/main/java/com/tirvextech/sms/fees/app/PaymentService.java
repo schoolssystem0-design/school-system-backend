@@ -4,8 +4,8 @@ import com.tirvextech.sms.fees.app.OpenLines.OpenLine;
 import com.tirvextech.sms.settings.SettingKey;
 import com.tirvextech.sms.settings.SettingsService;
 import com.tirvextech.sms.shared.audit.AuditService;
+import com.tirvextech.sms.communication.FamilyOutbox;
 import com.tirvextech.sms.communication.MessageTemplates;
-import com.tirvextech.sms.shared.messaging.MessageOutbox;
 import com.tirvextech.sms.shared.persistence.NumberSequences;
 import com.tirvextech.sms.shared.security.CurrentActor;
 import com.tirvextech.sms.shared.tenant.TenantContext;
@@ -83,7 +83,7 @@ public class PaymentService {
 
 	private final SettingsService settings;
 
-	private final MessageOutbox outbox;
+	private final FamilyOutbox familyOutbox;
 
 	private final MessageTemplates templates;
 
@@ -93,7 +93,7 @@ public class PaymentService {
 
 	PaymentService(JdbcTemplate jdbc, OpenLines openLines, CreditApplier credit, FeeLedger ledger,
 			NumberSequences sequences, YearContext yearContext, AcademicYearLookup years, SettingsService settings,
-			MessageOutbox outbox, MessageTemplates templates, AuditService audit, Clock clock) {
+			FamilyOutbox familyOutbox, MessageTemplates templates, AuditService audit, Clock clock) {
 		this.jdbc = jdbc;
 		this.openLines = openLines;
 		this.credit = credit;
@@ -102,7 +102,7 @@ public class PaymentService {
 		this.yearContext = yearContext;
 		this.years = years;
 		this.settings = settings;
-		this.outbox = outbox;
+		this.familyOutbox = familyOutbox;
 		this.templates = templates;
 		this.audit = audit;
 		this.clock = clock;
@@ -232,10 +232,11 @@ public class PaymentService {
 		String balance = due.signum() > 0 ? (urdu ? "Baqaya " : "Balance due ") + Amounts.rupees(due) + "."
 				: due.signum() < 0 ? (urdu ? "Advance " : "Advance credit ") + Amounts.rupees(due.negate()) + "."
 						: urdu ? "Koi baqaya nahi." : "No dues.";
-		String body = templates.render(MessageTemplates.Code.FEE_RECEIPT, Map.of("amount", Amounts.rupees(amount), "date",
-				com.tirvextech.sms.shared.pdf.PdfKit.date(date), "family", String.valueOf(family.get("family_no")), "receipt",
-				receiptNo, "balance", balance), language);
-		outbox.queueSms(phone, body, "FEE_RECEIPT", "payment", paymentId, null);
+		familyOutbox.queueTemplated(phone, (String) family.get("preferred_channel"), (String) family.get("message_language"),
+				MessageTemplates.Code.FEE_RECEIPT,
+				Map.of("amount", Amounts.rupees(amount), "date", com.tirvextech.sms.shared.pdf.PdfKit.date(date), "family",
+						String.valueOf(family.get("family_no")), "receipt", receiptNo, "balance", balance),
+				"FEE_RECEIPT", "payment", paymentId, null);
 	}
 
 	/** Reverses a payment completely (wrong amount, bounced cheque): a new negative entry; the original stays. */

@@ -73,6 +73,17 @@
 			<artifactId>openpdf</artifactId>
 			<version>3.0.5</version>
 		</dependency>
+		<!-- QR codes on certificates, report cards and fee receipts -->
+		<dependency>
+			<groupId>com.google.zxing</groupId>
+			<artifactId>core</artifactId>
+			<version>3.5.3</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.zxing</groupId>
+			<artifactId>javase</artifactId>
+			<version>3.5.3</version>
+		</dependency>
 		<!-- Excel exports (FR 15.6) -->
 		<dependency>
 			<groupId>org.apache.poi</groupId>

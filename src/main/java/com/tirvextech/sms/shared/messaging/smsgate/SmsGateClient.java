@@ -78,6 +78,34 @@ public class SmsGateClient {
 	}
 
 	/** @param urgent priority 100: the phone sends it even outside the app's working hours (a test the admin waits for) */
+	/**
+	 * Hands a voice-call payload to the school phone (data SMS on {@link TirvexVoice#DATA_PORT}). The companion dials the
+	 * parent and plays the Urdu script when they answer.
+	 */
+	public void sendVoice(Connection c, String id, String phone, String jsonPayload, Long ttlSeconds, Integer simNumber,
+			boolean urgent) {
+		String data = Base64.getEncoder().encodeToString(jsonPayload.getBytes(StandardCharsets.UTF_8));
+		Map<String, Object> body = new LinkedHashMap<>();
+		body.put("id", id);
+		body.put("dataMessage", Map.of("data", data, "port", TirvexVoice.DATA_PORT));
+		body.put("phoneNumbers", List.of(phone));
+		body.put("withDeliveryReport", true);
+		if (ttlSeconds != null) {
+			body.put("ttl", Math.max(ttlSeconds, 60));
+		}
+		if (simNumber != null) {
+			body.put("simNumber", simNumber);
+		}
+		if (urgent) {
+			body.put("priority", 100);
+		}
+		HttpResponse<String> res = call(c, "POST", "/messages", json.writeValueAsString(body));
+		if (res.statusCode() == 409) {
+			return;
+		}
+		check(res);
+	}
+
 	public void send(Connection c, String id, String phone, String text, Long ttlSeconds, Integer simNumber,
 			boolean urgent) {
 		Map<String, Object> body = new LinkedHashMap<>();

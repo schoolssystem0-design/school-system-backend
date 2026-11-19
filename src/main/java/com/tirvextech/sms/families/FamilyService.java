@@ -228,7 +228,7 @@ public class FamilyService {
 			throw ApiException.businessRule("PARENT_REQUIRED", "Enter the father's or mother's name");
 		}
 		String channel = d.preferredChannel() == null ? "SMS" : d.preferredChannel();
-		if (!Set.of("SMS", "WHATSAPP", "NONE").contains(channel)) {
+		if (!Set.of("SMS", "WHATSAPP", "VOICE", "NONE").contains(channel)) {
 			throw ApiException.businessRule("CHANNEL_INVALID", "Unknown contact channel");
 		}
 		if (d.messageLanguage() != null && !Set.of("EN", "UR").contains(d.messageLanguage())) {

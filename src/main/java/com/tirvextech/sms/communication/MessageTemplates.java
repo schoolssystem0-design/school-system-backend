@@ -27,14 +27,24 @@ public class MessageTemplates {
 		FEE_RECEIPT("Fee receipt",
 				"{school}: Received {amount} on {date} for family {family}. Receipt {receipt}. {balance} Thank you.",
 				"{school}: Family {family} se {amount} wusool hue ({date}). Raseed {receipt}. {balance} Shukriya.",
+				"This is {school}. We received fee payment of {amount} on {date}. Receipt number {receipt}. {balance} Thank you.",
+				"{school} نے {date} کو {amount} کی فیس وصول کی۔ رسید نمبر {receipt}۔ {balance} شکریہ۔",
 				List.of("school", "amount", "date", "family", "receipt", "balance")),
 		FEE_REMINDER("Fee reminder",
 				"{school}: Dear {name}, fees of {amount} are overdue. Please pay at the school office or bank. Ignore if already paid.",
 				"{school}: Mohtaram {name}, {amount} fees baqaya hai. Barah-e-karam school office ya bank mein jama karwayen. Ada kar di ho to nazar-andaz karen.",
+				"Assalam o alaikum. This is {school}. Dear {name}, school fees of {amount} are due. "
+						+ "Please pay at the school office or bank. Ignore this if you have already paid.",
+				"السلام علیکم۔ {school} کی طرف سے اطلاع ہے کہ محترم {name}، فیس کی رقم {amount} بقایا ہے۔ "
+						+ "براہ کرم سکول آفس یا بینک میں جمع کروائیں۔ اگر ادا کر چکے ہیں تو نظرانداز کریں۔",
 				List.of("school", "name", "amount")),
 		ATTENDANCE_ABSENT("Absence",
 				"{school}: {name} was absent from school today ({date}). Please contact the school if this is not correct.",
 				"{school}: {name} aaj ({date}) school se ghair hazir hai. Agar yeh ghalat hai to school se rabta karen.",
+				"Assalam o alaikum. This is {school}. Your child {name} was absent from school today, {date}. "
+						+ "Please contact the school if this is incorrect.",
+				"السلام علیکم۔ {school} کی طرف سے اطلاع ہے کہ آپ کا بچہ {name} آج {date} کو سکول میں حاضر نہیں تھا۔ "
+						+ "اگر یہ غلط ہے تو براہ کرم سکول سے رابطہ کریں۔",
 				List.of("school", "name", "date")),
 		WELCOME("Welcome to a new student",
 				"{school}: Welcome {name} to {class}. We are glad to have your family with us. First day: {date}.",
@@ -43,7 +53,13 @@ public class MessageTemplates {
 		BIRTHDAY("Birthday wish", "{school}: Wishing {name} a very happy birthday!",
 				"{school}: {name} ko saalgirah bohat bohat mubarak!", List.of("school", "name")),
 		TEST_MARKS("Test marks", "{school}: {name} - {subject} test ({date}): {marks}.",
-				"{school}: {name} - {subject} test ({date}): {marks}.", List.of("school", "name", "subject", "date", "marks"));
+				"{school}: {name} - {subject} test ({date}): {marks}.", List.of("school", "name", "subject", "date", "marks")),
+		SCHOOL_CLOSED("School closed",
+				"{school}: School will remain closed on {date}. {detail}",
+				"{school}: {date} ko school band rahega. {detail}",
+				"This is {school}. The school will remain closed on {date}. {detail}",
+				"{school} کی اطلاع ہے کہ {date} کو سکول بند رہے گا۔ {detail}",
+				List.of("school", "date", "detail"));
 
 		private final String label;
 
@@ -51,12 +67,23 @@ public class MessageTemplates {
 
 		private final String defaultUrdu;
 
+		private final String defaultVoiceEn;
+
+		private final String defaultVoiceUr;
+
 		private final List<String> placeholders;
 
 		Code(String label, String defaultBody, String defaultUrdu, List<String> placeholders) {
+			this(label, defaultBody, defaultUrdu, defaultBody, defaultUrdu, placeholders);
+		}
+
+		Code(String label, String defaultBody, String defaultUrdu, String defaultVoiceEn, String defaultVoiceUr,
+				List<String> placeholders) {
 			this.label = label;
 			this.defaultBody = defaultBody;
 			this.defaultUrdu = defaultUrdu;
+			this.defaultVoiceEn = defaultVoiceEn;
+			this.defaultVoiceUr = defaultVoiceUr;
 			this.placeholders = placeholders;
 		}
 
@@ -125,6 +152,19 @@ public class MessageTemplates {
 	/** The finished message in a family's language. */
 	public String render(Code code, Map<String, String> values, String language) {
 		return finish(body(code, language), values);
+	}
+
+	/** Spoken script for the school phone (Urdu script or plain English). */
+	public String voiceScript(Code code, Map<String, String> values, String language) {
+		String lang = language(language);
+		String school = jdbc.queryForObject("select name from school where id = ?", String.class,
+				TenantContext.requireSchoolId());
+		String pattern = ROMAN_URDU.equals(lang) ? code.defaultVoiceUr : code.defaultVoiceEn;
+		String result = pattern.replace("{school}", school);
+		for (var e : values.entrySet()) {
+			result = result.replace("{" + e.getKey() + "}", e.getValue() == null ? "" : e.getValue());
+		}
+		return result;
 	}
 
 	/** Fills placeholders in any text and adds the school's message signature. */

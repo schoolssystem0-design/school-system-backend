@@ -8,6 +8,8 @@ import com.tirvextech.sms.shared.pdf.CertificateRegister;
 import com.tirvextech.sms.shared.pdf.Letterhead;
 import com.tirvextech.sms.shared.pdf.LetterheadSource;
 import com.tirvextech.sms.shared.pdf.PdfKit;
+import com.tirvextech.sms.shared.verify.DocumentVerificationService;
+import com.tirvextech.sms.shared.verify.DocumentVerificationService.DocKind;
 import com.tirvextech.sms.shared.web.ApiException;
 import com.tirvextech.sms.shared.year.YearContext;
 import com.tirvextech.sms.students.StudentService;
@@ -52,9 +54,11 @@ public class StudentPrintService {
 
 	private final AuditService audit;
 
+	private final DocumentVerificationService verification;
+
 	StudentPrintService(StudentService students, FamilyService families, CertificateRegister register,
 			LetterheadSource letterheads, FileService files, YearContext yearContext, StudentAccess access,
-			AuditService audit) {
+			AuditService audit, DocumentVerificationService verification) {
 		this.students = students;
 		this.families = families;
 		this.register = register;
@@ -63,6 +67,7 @@ public class StudentPrintService {
 		this.yearContext = yearContext;
 		this.access = access;
 		this.audit = audit;
+		this.verification = verification;
 	}
 
 	@Transactional
@@ -143,10 +148,13 @@ public class StudentPrintService {
 		}
 		paragraphs.add("We wish %s every success in the future.".formatted(girl ? "her" : "him"));
 		var issued = register.issue(type, studentId, null, Map.of("paragraphs", paragraphs, "title", title));
+		String subject = "%s (GR %s)".formatted(s.getName(), s.getGrNo());
+		var verify = verification.register(DocKind.CERTIFICATE, "certificate_issue", issued.id(), title, subject,
+				access.today());
 		audit.record("CERTIFICATE_ISSUED", "student", studentId, null, Map.of("type", type.name(), "serialNo",
 				issued.serialNo()));
 		return CertificatePdf.render(letterheads.current(), new CertificatePdf.CertificateContent(title, issued.serialNo(),
-				access.today(), paragraphs, List.of("Principal")));
+				access.today(), paragraphs, List.of("Principal"), verify.verifyUrl()));
 	}
 
 	/** Bio-data sheet of one student (FR 5.9). */

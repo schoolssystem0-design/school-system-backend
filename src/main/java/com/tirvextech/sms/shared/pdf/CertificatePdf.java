@@ -7,7 +7,7 @@ import java.util.List;
 public final class CertificatePdf {
 
 	public record CertificateContent(String title, String serialNo, LocalDate issueDate, List<String> paragraphs,
-			List<String> signatureRoles) {
+			List<String> signatureRoles, String verifyUrl) {
 	}
 
 	private CertificatePdf() {
@@ -21,6 +21,7 @@ public final class CertificatePdf {
 			for (String paragraph : content.paragraphs()) {
 				PdfKit.paragraph(doc, paragraph);
 			}
+			PdfKit.verificationQr(doc, content.verifyUrl());
 			PdfKit.signatures(doc, letterhead, content.signatureRoles(), true);
 		});
 	}

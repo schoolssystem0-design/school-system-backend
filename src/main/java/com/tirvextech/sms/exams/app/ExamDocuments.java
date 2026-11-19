@@ -10,6 +10,11 @@ import com.tirvextech.sms.settings.SettingsService;
 import com.tirvextech.sms.shared.pdf.Letterhead;
 import com.tirvextech.sms.shared.pdf.LetterheadSource;
 import com.tirvextech.sms.shared.pdf.PdfKit;
+import com.tirvextech.sms.shared.verify.DocumentVerificationService;
+import com.tirvextech.sms.shared.verify.DocumentVerificationService.DocKind;
+import java.time.Clock;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import com.tirvextech.sms.shared.web.ApiException;
 import java.awt.BasicStroke;
 import java.awt.Color;
@@ -73,14 +78,49 @@ public class ExamDocuments {
 
 	private final LetterheadSource letterhead;
 
+	private final DocumentVerificationService verification;
+
+	private final Clock clock;
+
 	ExamDocuments(JdbcTemplate jdbc, ExamSetupService setup, ResultService results, MarksService marks,
-			SettingsService settings, LetterheadSource letterhead) {
+			SettingsService settings, LetterheadSource letterhead, DocumentVerificationService verification,
+			Clock clock) {
 		this.jdbc = jdbc;
 		this.setup = setup;
 		this.results = results;
 		this.marks = marks;
 		this.settings = settings;
 		this.letterhead = letterhead;
+		this.verification = verification;
+		this.clock = clock;
+	}
+
+	private LocalDate today() {
+		return LocalDate.now(clock.withZone(ZoneId.of("Asia/Karachi")));
+	}
+
+	static List<StudentResult> pickStudents(List<StudentResult> students, ReportCardFilter filter) {
+		ReportCardFilter f = filter == null ? new ReportCardFilter(null, null, null, null, null) : filter;
+		if (f.studentId() != null) {
+			return students.stream().filter(s -> f.studentId().equals(s.studentId())).toList();
+		}
+		var stream = students.stream();
+		if (f.studentIds() != null && !f.studentIds().isEmpty()) {
+			java.util.Set<Long> ids = new HashSet<>(f.studentIds());
+			stream = stream.filter(s -> ids.contains(s.studentId()));
+		}
+		if (Boolean.TRUE.equals(f.passedOnly())) {
+			stream = stream.filter(s -> Boolean.TRUE.equals(s.passed()));
+		}
+		if (f.minPercent() != null && !f.minPercent().isBlank()) {
+			BigDecimal min = new BigDecimal(f.minPercent().trim());
+			stream = stream.filter(s -> s.percent() != null && new BigDecimal(s.percent()).compareTo(min) >= 0);
+		}
+		if (f.top() != null && f.top() > 0) {
+			int top = f.top();
+			stream = stream.filter(s -> s.position() != null && s.position() <= top);
+		}
+		return stream.toList();
 	}
 
 	// ------------------------------------------------------------ datesheet
@@ -363,20 +403,22 @@ public class ExamDocuments {
 
 	// ----------------------------------------------------------- report cards
 
+	/** Who to include when printing report cards: one student, a picked list, or query-style filters (e.g. top positions). */
+	public record ReportCardFilter(Long studentId, List<Long> studentIds, Integer top, Boolean passedOnly,
+			String minPercent) {
+	}
+
 	/**
 	 * Report cards, one page per student, for a student, a section or the whole class (QA-EXM-010/011). Published
 	 * classes print from the frozen snapshot; a draft prints only for checking and is marked so.
 	 */
-	@Transactional(readOnly = true)
-	public byte[] reportCards(long examClassId, Long sectionId, Long studentId) {
+	@Transactional
+	public byte[] reportCards(long examClassId, Long sectionId, ReportCardFilter filter) {
 		ExamClassView ec = setup.examClass(examClassId);
 		ClassResults r = results.results(examClassId, sectionId, null);
-		List<StudentResult> students = r.students()
-			.stream()
-			.filter(s -> studentId == null || studentId == s.studentId())
-			.toList();
+		List<StudentResult> students = pickStudents(r.students(), filter);
 		if (students.isEmpty()) {
-			throw ApiException.notFound("Student");
+			throw ApiException.businessRule("NO_STUDENTS", "No students match this print selection");
 		}
 		boolean compact = "COMPACT".equals(settings.text(SettingKey.REPORT_CARD_LAYOUT));
 		boolean highest = settings.bool(SettingKey.SHOW_HIGHEST_MARKS_COLUMN);
@@ -405,6 +447,10 @@ public class ExamDocuments {
 				if (principalSignature) {
 					roles.add("Principal");
 				}
+				String cardTitle = "Report card — " + ec.examName();
+				var reg = verification.register(DocKind.REPORT_CARD, "exam_class:" + examClassId, s.studentId(), cardTitle,
+						s.name() + " · " + s.section(), today());
+				PdfKit.verificationQr(doc, reg.verifyUrl());
 				PdfKit.signatures(doc, lh, roles, false);
 				if (!r.live()) {
 					Paragraph v = new Paragraph("Published version " + r.version(), PdfKit.SMALL);

@@ -123,6 +123,13 @@ public class MessageOutbox {
 		return queue("SMS", phone, null, body, purpose, sourceType, sourceId, idempotencyKey, notBefore, expiresAt);
 	}
 
+	/** Urdu voice alert on the school phone (JSON body for the voice companion). */
+	@Transactional(propagation = Propagation.MANDATORY)
+	public boolean queueVoice(String phone, String jsonBody, String purpose, String sourceType, Long sourceId,
+			String idempotencyKey, Instant notBefore, Instant expiresAt) {
+		return queue("VOICE", phone, null, jsonBody, purpose, sourceType, sourceId, idempotencyKey, notBefore, expiresAt);
+	}
+
 	/** Queues an email (system alerts). */
 	@Transactional(propagation = Propagation.MANDATORY)
 	public boolean queueEmail(String to, String subject, String body, String purpose, String idempotencyKey) {
@@ -282,7 +289,7 @@ public class MessageOutbox {
 							"Expired before it could be sent", row.id());
 					return Outcome.CANCELLED;
 				}
-				Optional<SmsGateways.Gateway> gateway = "SMS".equals(row.channel())
+				Optional<SmsGateways.Gateway> gateway = "SMS".equals(row.channel()) || "VOICE".equals(row.channel())
 						? gatewayCache.computeIfAbsent(row.schoolId(), id -> gateways.forSchool(id).filter(SmsGateways.Gateway::usable))
 						: Optional.empty();
 				if (gateway.isPresent()) {
@@ -334,8 +341,10 @@ public class MessageOutbox {
 			}
 			int limit = intSetting(row.schoolId(), "messages.sms_daily_limit", 200);
 			int today = sentToday.computeIfAbsent(row.schoolId(), id -> jdbc.queryForObject(
-					"select count(*) from message_outbox where school_id = ? and queued_at >= ?", Integer.class, id,
-					Timestamp.from(startOfToday())));
+					"""
+					select count(*) from message_outbox where school_id = ? and queued_at >= ?
+					  and channel in ('SMS', 'VOICE')""",
+					Integer.class, id, Timestamp.from(startOfToday())));
 			if (limit > 0 && today >= limit) {
 				Instant tomorrow = LocalDate.now(clock.withZone(ZONE)).plusDays(1).atStartOfDay(ZONE).toInstant();
 				jdbc.update("update message_outbox set next_attempt_at = ?, last_error = ? where id = ?",
@@ -363,7 +372,12 @@ public class MessageOutbox {
 		Long ttl = row.expiresAt() == null ? null : Duration.between(now, row.expiresAt()).toSeconds();
 		int attempts = row.attempts() + 1;
 		try {
-			gateClient.send(g.connection(), gatewayId, phone, row.body(), ttl, g.simNumber(), immediate);
+			if ("VOICE".equals(row.channel())) {
+				gateClient.sendVoice(g.connection(), gatewayId, phone, row.body(), ttl, g.simNumber(), immediate);
+			}
+			else {
+				gateClient.send(g.connection(), gatewayId, phone, row.body(), ttl, g.simNumber(), immediate);
+			}
 			jdbc.update("""
 					update message_outbox set status = 'QUEUED', attempts = ?, queued_at = ?, last_error = null
 					where id = ? and status = 'PENDING'""", attempts, Timestamp.from(now), row.id());

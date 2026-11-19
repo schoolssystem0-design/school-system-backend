@@ -3,6 +3,7 @@ package com.tirvextech.sms.attendance.app;
 import com.tirvextech.sms.settings.SettingKey;
 import com.tirvextech.sms.settings.SettingsService;
 import com.tirvextech.sms.shared.audit.AuditService;
+import com.tirvextech.sms.communication.FamilyOutbox;
 import com.tirvextech.sms.communication.MessageTemplates;
 import com.tirvextech.sms.shared.messaging.MessageOutbox;
 import com.tirvextech.sms.shared.money.MoneyInput;
@@ -79,6 +80,8 @@ public class RegisterService {
 
 	private final MessageOutbox outbox;
 
+	private final FamilyOutbox familyOutbox;
+
 	private final MessageTemplates templates;
 
 	private final AuditService audit;
@@ -86,13 +89,15 @@ public class RegisterService {
 	private final Clock clock;
 
 	RegisterService(JdbcTemplate jdbc, AttendanceAccess access, WorkingDayCalendar calendar, YearContext yearContext,
-			SettingsService settings, MessageOutbox outbox, MessageTemplates templates, AuditService audit, Clock clock) {
+			SettingsService settings, MessageOutbox outbox, FamilyOutbox familyOutbox, MessageTemplates templates,
+			AuditService audit, Clock clock) {
 		this.jdbc = jdbc;
 		this.access = access;
 		this.calendar = calendar;
 		this.yearContext = yearContext;
 		this.settings = settings;
 		this.outbox = outbox;
+		this.familyOutbox = familyOutbox;
 		this.templates = templates;
 		this.audit = audit;
 		this.clock = clock;
@@ -256,10 +261,10 @@ public class RegisterService {
 			}
 			// Pointless after the day is over: the phone drops it rather than alarming a parent the next morning.
 			java.time.Instant endOfDay = date.plusDays(1).atStartOfDay(java.time.ZoneId.of("Asia/Karachi")).toInstant();
-			outbox.queueSms(phone, templates.render(MessageTemplates.Code.ATTENDANCE_ABSENT, Map.of("name",
-					(String) s.get("name"), "date", com.tirvextech.sms.shared.pdf.PdfKit.date(date)),
-					MessageTemplates.language((String) s.get("message_language"))), "ATTENDANCE_ABSENT", "student", studentId,
-					absenceKey(studentId, date), null, endOfDay);
+			familyOutbox.queueTemplated(phone, (String) s.get("preferred_channel"),
+					(String) s.get("message_language"), MessageTemplates.Code.ATTENDANCE_ABSENT,
+					Map.of("name", (String) s.get("name"), "date", com.tirvextech.sms.shared.pdf.PdfKit.date(date)),
+					"ATTENDANCE_ABSENT", "student", studentId, absenceKey(studentId, date), null, endOfDay);
 		}
 	}
 

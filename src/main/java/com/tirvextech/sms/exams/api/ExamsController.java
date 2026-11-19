@@ -348,9 +348,11 @@ class ExamsController {
 	@PreAuthorize(PRINT)
 	@GetMapping(value = "/classes/{examClassId}/report-cards", produces = MediaType.APPLICATION_PDF_VALUE)
 	ResponseEntity<byte[]> reportCards(@PathVariable long examClassId, @RequestParam(required = false) Long sectionId,
-			@RequestParam(required = false) Long studentId) {
-		return file(documents.reportCards(examClassId, sectionId, studentId), MediaType.APPLICATION_PDF,
-				"report-cards.pdf");
+			@RequestParam(required = false) Long studentId, @RequestParam(required = false) List<Long> studentIds,
+			@RequestParam(required = false) Integer top, @RequestParam(required = false) Boolean passedOnly,
+			@RequestParam(required = false) String minPercent) {
+		var filter = new ExamDocuments.ReportCardFilter(studentId, studentIds, top, passedOnly, minPercent);
+		return file(documents.reportCards(examClassId, sectionId, filter), MediaType.APPLICATION_PDF, "report-cards.pdf");
 	}
 
 	// -------------------------------------------------------------- messaging

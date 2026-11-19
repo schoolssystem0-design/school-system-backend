@@ -473,6 +473,7 @@ class SmsGateIT extends IntegrationTest {
 			.andExpect(status().isCreated());
 		long studentId = ((Number) ApiClient.json(r, "$.id")).longValue();
 		setting("attendance.send_absence_sms", "true");
+		setting("messages.voice_for_urdu_families", "false");
 		var marked = admin.put("/api/v1/attendance/registers/" + sectionId + "?date=" + today,
 				"{\"marks\":[{\"studentId\":%d,\"status\":\"A\"}],\"reason\":\"test\"}".formatted(studentId));
 		if (marked.andReturn().getResponse().getStatus() != 200) {
@@ -481,7 +482,8 @@ class SmsGateIT extends IntegrationTest {
 		}
 		long id = db.queryForObject("select id from message_outbox where school_id = ? and purpose = 'ATTENDANCE_ABSENT'",
 				Long.class, school.id());
-		// Roman Urdu for this family, and it expires at the end of the day
+		// Roman Urdu SMS for this family (voice for Urdu is off in this test), and it expires at the end of the day
+		assertThat(db.queryForObject("select channel from message_outbox where id = ?", String.class, id)).isEqualTo("SMS");
 		assertThat(db.queryForObject("select body from message_outbox where id = ?", String.class, id))
 			.contains("ghair hazir");
 		assertThat(db.queryForObject("select expires_at from message_outbox where id = ?", Timestamp.class, id)).isNotNull();
@@ -494,6 +496,36 @@ class SmsGateIT extends IntegrationTest {
 			.andExpect(status().isOk());
 		assertThat(row(id).get("status")).isEqualTo("CANCELLED");
 		assertThat(gate.cancelled).containsExactly(gatewayId);
+	}
+
+	@Test
+	void romanUrduFamilyGetsVoiceCallForAbsence() throws Exception {
+		connect("secret-pass").andExpect(status().isOk());
+		TestData.yearAroundToday(school, true);
+		long classId = TestData.schoolClass(school, "VoiceC", 5);
+		long sectionId = TestData.section(school, classId, "A");
+		LocalDate today = LocalDate.now(ZoneId.of("Asia/Karachi"));
+		var r = admin.post("/api/v1/students", """
+				{"student":{"name":"Hamza","gender":"M"},"newFamily":{"fatherName":"Rashid","fatherPhone":"03008889990",
+				 "preferredChannel":"VOICE","messageLanguage":"UR"},"sectionId":%d,"admissionDate":"%s"}"""
+				.formatted(sectionId, today.minusDays(5)))
+			.andExpect(status().isCreated());
+		long studentId = ((Number) ApiClient.json(r, "$.id")).longValue();
+		setting("attendance.send_absence_sms", "true");
+		var marked = admin.put("/api/v1/attendance/registers/" + sectionId + "?date=" + today,
+				"{\"marks\":[{\"studentId\":%d,\"status\":\"A\"}],\"reason\":\"test\"}".formatted(studentId));
+		if (marked.andReturn().getResponse().getStatus() != 200) {
+			return;
+		}
+		long id = db.queryForObject("select id from message_outbox where school_id = ? and purpose = 'ATTENDANCE_ABSENT'",
+				Long.class, school.id());
+		assertThat(db.queryForObject("select channel from message_outbox where id = ?", String.class, id)).isEqualTo("VOICE");
+		assertThat(db.queryForObject("select body from message_outbox where id = ?", String.class, id)).contains("Hamza")
+			.contains("\"template\":\"ATTENDANCE_ABSENT\"");
+		outbox.dispatchDue();
+		assertThat(gate.sent).isNotEmpty();
+		assertThat(gate.sent.getLast().get("body")).contains("dataMessage");
+		assertThat(gate.sent.getLast().get("body")).contains(String.valueOf(com.tirvextech.sms.shared.messaging.smsgate.TirvexVoice.DATA_PORT));
 	}
 
 	@Test

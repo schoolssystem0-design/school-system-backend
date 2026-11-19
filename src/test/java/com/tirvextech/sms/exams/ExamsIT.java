@@ -393,6 +393,11 @@ class ExamsIT extends IntegrationTest {
 			.andExpect(content().contentType("application/pdf"));
 		admin.get("/api/v1/exams/classes/" + ec + "/report-cards?studentId=" + students.get(0))
 			.andExpect(status().isOk());
+		admin.get("/api/v1/exams/classes/" + ec + "/report-cards?top=1&sectionId=" + sec5a).andExpect(status().isOk());
+		admin.get("/api/v1/exams/classes/" + ec + "/report-cards?studentIds=" + students.get(0) + "&studentIds="
+				+ students.get(1)).andExpect(status().isOk());
+		admin.get("/api/v1/exams/classes/" + ec + "/report-cards?minPercent=150").andExpect(status().isUnprocessableContent())
+			.andExpect(jsonPath("$.code").value("NO_STUDENTS"));
 		setting("report_cards.report_card_layout", "COMPACT");
 		admin.get("/api/v1/exams/classes/" + ec + "/report-cards").andExpect(status().isOk());
 		admin.get("/api/v1/exams/classes/" + ec + "/result-sheet").andExpect(status().isOk());

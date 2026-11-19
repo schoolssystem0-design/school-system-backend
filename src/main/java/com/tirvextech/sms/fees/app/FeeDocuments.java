@@ -10,6 +10,8 @@ import com.tirvextech.sms.shared.audit.AuditService;
 import com.tirvextech.sms.shared.pdf.Letterhead;
 import com.tirvextech.sms.shared.pdf.LetterheadSource;
 import com.tirvextech.sms.shared.pdf.PdfKit;
+import com.tirvextech.sms.shared.verify.DocumentVerificationService;
+import com.tirvextech.sms.shared.verify.DocumentVerificationService.DocKind;
 import com.tirvextech.sms.shared.web.ApiException;
 import com.tirvextech.sms.shared.year.YearContext;
 import java.awt.Color;
@@ -64,8 +66,11 @@ public class FeeDocuments {
 
 	private final Clock clock;
 
+	private final DocumentVerificationService verification;
+
 	FeeDocuments(FeeQueries queries, PaymentService payments, OpenLines openLines, SettingsService settings,
-			LetterheadSource letterhead, YearContext yearContext, JdbcTemplate jdbc, AuditService audit, Clock clock) {
+			LetterheadSource letterhead, YearContext yearContext, JdbcTemplate jdbc, AuditService audit, Clock clock,
+			DocumentVerificationService verification) {
 		this.queries = queries;
 		this.payments = payments;
 		this.openLines = openLines;
@@ -75,6 +80,7 @@ public class FeeDocuments {
 		this.jdbc = jdbc;
 		this.audit = audit;
 		this.clock = clock;
+		this.verification = verification;
 	}
 
 	// --------------------------------------------------------------- vouchers
@@ -396,6 +402,8 @@ public class FeeDocuments {
 		}
 		Letterhead lh = letterhead.current();
 		boolean a5 = "A5".equals(settings.text(SettingKey.RECEIPT_STYLE));
+		String subject = p.receiptNo() + (p.studentName() != null ? " — " + p.studentName() : " — " + p.fatherName());
+		var verify = verification.register(DocKind.FEE_RECEIPT, "payment", paymentId, "Fee receipt", subject, p.paymentDate());
 		return PdfKit.render(a5 ? PageSize.A5 : PageSize.A4, 28, doc -> {
 			PdfKit.letterhead(doc, lh);
 			PdfKit.title(doc, p.reversedByPaymentId() != null ? "FEE RECEIPT (REVERSED)" : "FEE RECEIPT");
@@ -443,6 +451,7 @@ public class FeeDocuments {
 			BigDecimal balance = new BigDecimal(p.familyBalance());
 			PdfKit.paragraph(doc, balance.signum() > 0 ? "Balance still due (whole family): " + Amounts.rupees(balance)
 					: "No dues remaining for the family.");
+			PdfKit.verificationQr(doc, verify.verifyUrl());
 			PdfKit.signatures(doc, lh, List.of("Accountant"), true);
 		});
 	}

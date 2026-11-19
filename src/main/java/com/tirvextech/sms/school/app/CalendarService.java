@@ -41,13 +41,16 @@ public class CalendarService {
 
 	private final AuditService audit;
 
+	private final HolidayParentNotifier holidays;
+
 	CalendarService(AcademicYearService years, WorkingDayStore workingDays, CalendarDayOffRepository daysOff,
-			YearContext yearContext, AuditService audit) {
+			YearContext yearContext, AuditService audit, HolidayParentNotifier holidays) {
 		this.years = years;
 		this.workingDays = workingDays;
 		this.daysOff = daysOff;
 		this.yearContext = yearContext;
 		this.audit = audit;
+		this.holidays = holidays;
 	}
 
 	@Transactional(readOnly = true)
@@ -93,6 +96,7 @@ public class CalendarService {
 		CalendarDayOff saved = daysOff.save(new CalendarDayOff(yearId, from, to, title.trim(),
 				type == null ? CalendarDayOff.DayOffType.HOLIDAY : type));
 		audit.record("DAY_OFF_ADDED", "calendar_day_off", saved.getId(), null, DayOffView.of(saved));
+		holidays.notify(saved);
 		return DayOffView.of(saved);
 	}
 

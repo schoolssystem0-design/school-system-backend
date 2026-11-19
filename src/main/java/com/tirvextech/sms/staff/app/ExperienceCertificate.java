@@ -5,6 +5,8 @@ import com.tirvextech.sms.shared.pdf.CertificatePdf;
 import com.tirvextech.sms.shared.pdf.CertificateRegister;
 import com.tirvextech.sms.shared.pdf.LetterheadSource;
 import com.tirvextech.sms.shared.pdf.PdfKit;
+import com.tirvextech.sms.shared.verify.DocumentVerificationService;
+import com.tirvextech.sms.shared.verify.DocumentVerificationService.DocKind;
 import com.tirvextech.sms.staff.StaffService;
 import java.time.Clock;
 import java.time.LocalDate;
@@ -27,13 +29,16 @@ public class ExperienceCertificate {
 
 	private final Clock clock;
 
+	private final DocumentVerificationService verification;
+
 	ExperienceCertificate(StaffService staff, CertificateRegister register, LetterheadSource letterhead,
-			AuditService audit, Clock clock) {
+			AuditService audit, Clock clock, DocumentVerificationService verification) {
 		this.staff = staff;
 		this.register = register;
 		this.letterhead = letterhead;
 		this.audit = audit;
 		this.clock = clock;
+		this.verification = verification;
 	}
 
 	@Transactional
@@ -57,7 +62,9 @@ public class ExperienceCertificate {
 		audit.record("CERTIFICATE_ISSUED", "staff", staffId, null,
 				Map.of("type", "EXPERIENCE", "serialNo", issued.serialNo()));
 		LocalDate today = LocalDate.now(clock.withZone(java.time.ZoneId.of("Asia/Karachi")));
+		var verify = verification.register(DocKind.CERTIFICATE, "certificate_issue", issued.id(), "Experience certificate",
+				d.name() + " (Emp. " + view.employeeNo() + ")", today);
 		return CertificatePdf.render(letterhead.current(), new CertificatePdf.CertificateContent("EXPERIENCE CERTIFICATE",
-				issued.serialNo(), today, paragraphs, List.of("Principal")));
+				issued.serialNo(), today, paragraphs, List.of("Principal"), verify.verifyUrl()));
 	}
 }

@@ -1,6 +1,7 @@
 package com.tirvextech.sms.fees.app;
 
 import com.tirvextech.sms.shared.audit.AuditService;
+import com.tirvextech.sms.communication.FamilyOutbox;
 import com.tirvextech.sms.communication.MessageTemplates;
 import com.tirvextech.sms.shared.messaging.MessageOutbox;
 import com.tirvextech.sms.shared.security.CurrentActor;
@@ -31,16 +32,17 @@ public class FeeCollections {
 
 	private final OpenLines openLines;
 
-	private final MessageOutbox outbox;
+	private final FamilyOutbox familyOutbox;
 
 	private final MessageTemplates templates;
 
 	private final AuditService audit;
 
-	FeeCollections(JdbcTemplate jdbc, OpenLines openLines, MessageOutbox outbox, MessageTemplates templates, AuditService audit) {
+	FeeCollections(JdbcTemplate jdbc, OpenLines openLines, FamilyOutbox familyOutbox, MessageTemplates templates,
+			AuditService audit) {
 		this.jdbc = jdbc;
 		this.openLines = openLines;
-		this.outbox = outbox;
+		this.familyOutbox = familyOutbox;
 		this.templates = templates;
 		this.audit = audit;
 	}
@@ -114,15 +116,25 @@ public class FeeCollections {
 				noPhone++;
 				continue;
 			}
-			String wording = custom != null ? custom
-					: templates.body(MessageTemplates.Code.FEE_REMINDER, (String) f.get("message_language"));
-			String body = templates.finish(wording, Map.of("name",
-					f.get("father_name") == null ? "Parent" : (String) f.get("father_name"), "amount", Amounts.rupees(due)));
-			if (outbox.queueSms(phone, body, "FEE_REMINDER", "family", familyId, idempotencyKey.trim())) {
+			boolean sent;
+			if (custom != null) {
+				String body = templates.finish(custom, Map.of("name",
+						f.get("father_name") == null ? "Parent" : (String) f.get("father_name"), "amount", Amounts.rupees(due)));
+				sent = familyOutbox.queueSmsText(phone, (String) f.get("preferred_channel"), body, "FEE_REMINDER", "family",
+						familyId, idempotencyKey.trim());
+			}
+			else {
+				sent = familyOutbox.queueTemplated(phone, (String) f.get("preferred_channel"),
+						(String) f.get("message_language"), MessageTemplates.Code.FEE_REMINDER,
+						Map.of("name", f.get("father_name") == null ? "Parent" : (String) f.get("father_name"), "amount",
+								Amounts.rupees(due)),
+						"FEE_REMINDER", "family", familyId, idempotencyKey.trim());
+			}
+			if (sent) {
 				queued++;
 				jdbc.update("""
 						insert into fee_followup (school_id, family_id, remark, created_by) values (?, ?, ?, ?)""",
-						TenantContext.requireSchoolId(), familyId, "Reminder SMS sent for " + Amounts.rupees(due),
+						TenantContext.requireSchoolId(), familyId, "Reminder sent for " + Amounts.rupees(due),
 						CurrentActor.require().displayName());
 			}
 			else {

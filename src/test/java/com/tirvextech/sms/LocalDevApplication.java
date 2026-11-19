@@ -23,7 +23,7 @@ public class LocalDevApplication {
 
 	static final String OWNER_PASSWORD = "Owner@123456";
 
-	/** Fixed authenticator secret for local development only: add it to an authenticator app by hand. */
+	/** Legacy TOTP secret (only used when APP_PLATFORM_SECOND_FACTOR=totp). */
 	static final String OWNER_TOTP_SECRET = "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP";
 
 	public static void main(String[] args) {
@@ -62,10 +62,10 @@ public class LocalDevApplication {
 
 				  Local API ready on http://localhost:8080
 				  School sign-in : school DEMO or DEMO2 / username admin / password %s
-				  Super admin    : %s / %s / authenticator secret %s
-				  Dev outbox     : http://localhost:8080/api/v1/dev/outbox (setup links, verification codes)
+				  Super admin    : %s / %s then sign-in code from dev outbox
+				  Dev outbox     : http://localhost:8080/api/v1/dev/outbox (setup links, sign-in codes)
 				  Fake SMS phone : http://localhost:8080/api/v1/dev/sms-gate/messages (connect it in Messages, SMS phone)
-				""".formatted(DEMO_PASSWORD, OWNER_EMAIL, OWNER_PASSWORD, OWNER_TOTP_SECRET));
+				""".formatted(DEMO_PASSWORD, OWNER_EMAIL, OWNER_PASSWORD));
 	}
 
 	private static void seedSchool(SchoolManagementService schools, JdbcTemplate db, String code, String name,

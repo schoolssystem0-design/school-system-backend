@@ -560,6 +560,36 @@ public final class PdfKit {
 		return cell;
 	}
 
+	/** QR link to the public verification page; placed on certificates, report cards and fee receipts. */
+	public static void verificationQr(Document doc, String verifyUrl) {
+		if (verifyUrl == null || verifyUrl.isBlank()) {
+			return;
+		}
+		try {
+			byte[] png = QrCodes.png(verifyUrl, 140);
+			Image img = Image.getInstance(png);
+			img.scaleToFit(72, 72);
+			PdfPTable row = new PdfPTable(new float[] { 1f, 0.45f });
+			row.setWidthPercentage(100);
+			row.setSpacingBefore(8);
+			PdfPCell text = new PdfPCell();
+			text.setBorder(Rectangle.NO_BORDER);
+			text.addElement(new Paragraph("Scan to verify this document is genuine.", SMALL));
+			text.addElement(new Paragraph(verifyUrl, new Font(Font.HELVETICA, 6.5f, Font.NORMAL, MUTED)));
+			row.addCell(text);
+			PdfPCell code = new PdfPCell();
+			code.setBorder(Rectangle.NO_BORDER);
+			code.setHorizontalAlignment(Element.ALIGN_RIGHT);
+			code.setVerticalAlignment(Element.ALIGN_MIDDLE);
+			code.setImage(img);
+			row.addCell(code);
+			add(doc, row);
+		}
+		catch (Exception ex) {
+			throw new IllegalStateException("Could not add verification QR", ex);
+		}
+	}
+
 	public static void add(Document doc, Element element) {
 		try {
 			doc.add(element);

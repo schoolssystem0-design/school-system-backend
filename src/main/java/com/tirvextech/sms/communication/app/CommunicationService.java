@@ -1,5 +1,6 @@
 package com.tirvextech.sms.communication.app;
 
+import com.tirvextech.sms.communication.FamilyOutbox;
 import com.tirvextech.sms.communication.MessageTemplates;
 import com.tirvextech.sms.communication.MessageTemplates.Code;
 import com.tirvextech.sms.settings.SettingKey;
@@ -41,7 +42,7 @@ public class CommunicationService {
 	public record Audience(String type, Long classId, Long sectionId, List<Long> studentIds) {
 	}
 
-	public record RecipientRow(String name, String phone) {
+	public record RecipientRow(String name, String phone, String preferredChannel) {
 	}
 
 	public record SendPreview(int recipients, int noPhone, List<RecipientRow> sample, String sampleMessage, String encoding,
@@ -67,17 +68,20 @@ public class CommunicationService {
 
 	private final MessageOutbox outbox;
 
+	private final FamilyOutbox familyOutbox;
+
 	private final SettingsService settings;
 
 	private final AuditService audit;
 
 	private final Clock clock;
 
-	CommunicationService(JdbcTemplate jdbc, MessageTemplates templates, MessageOutbox outbox, SettingsService settings,
-			AuditService audit, Clock clock) {
+	CommunicationService(JdbcTemplate jdbc, MessageTemplates templates, MessageOutbox outbox, FamilyOutbox familyOutbox,
+			SettingsService settings, AuditService audit, Clock clock) {
 		this.jdbc = jdbc;
 		this.templates = templates;
 		this.outbox = outbox;
+		this.familyOutbox = familyOutbox;
 		this.settings = settings;
 		this.audit = audit;
 		this.clock = clock;
@@ -129,7 +133,7 @@ public class CommunicationService {
 			}
 			case "ENQUIRIES" -> {
 				sql = """
-						select coalesce(q.parent_name, 'Parent'), q.parent_phone, 'SMS' from enquiry q
+						select coalesce(q.parent_name, 'Parent'), q.parent_phone, 'SMS' as preferred_channel from enquiry q
 						join enquiry_status st on st.id = q.status_id
 						where coalesce(st.system_code, '') not in ('ENROLLED', 'NOT_PROCEEDING')""";
 				if (a.classId() != null) {
@@ -138,7 +142,7 @@ public class CommunicationService {
 				}
 				sql += " order by q.id";
 			}
-			case "STAFF" -> sql = "select name, phone, 'SMS' from staff where status = 'ACTIVE' order by name";
+			case "STAFF" -> sql = "select name, phone, 'SMS' as preferred_channel from staff where status = 'ACTIVE' order by name";
 			default -> throw ApiException.businessRule("AUDIENCE_INVALID", "Choose who receives the message");
 		}
 		Map<String, RecipientRow> byPhone = new LinkedHashMap<>();
@@ -162,7 +166,7 @@ public class CommunicationService {
 				noPhone[0]++;
 			}
 			else {
-				byPhone.putIfAbsent(phone, new RecipientRow(rs.getString(1), phone));
+				byPhone.putIfAbsent(phone, new RecipientRow(rs.getString(1), phone, rs.getString(3)));
 			}
 		});
 		if (byPhone.size() > MAX_RECIPIENTS) {
@@ -209,8 +213,8 @@ public class CommunicationService {
 		int queued = 0;
 		int already = 0;
 		for (RecipientRow row : r.rows()) {
-			if (outbox.queueSms(row.phone(), templates.finish(text, Map.of("name", row.name())), "NOTICE", "audience", null,
-					idempotencyKey.trim())) {
+			if (familyOutbox.queueSmsText(row.phone(), row.preferredChannel(),
+					templates.finish(text, Map.of("name", row.name())), "NOTICE", "audience", null, idempotencyKey.trim())) {
 				queued++;
 			}
 			else {
@@ -239,9 +243,10 @@ public class CommunicationService {
 			return new WelcomeResult(false, false, true);
 		}
 		LocalDate first = ((Date) s.get("admission_date")).toLocalDate();
-		boolean queued = outbox.queueSms(phone, templates.render(Code.WELCOME, Map.of("name", (String) s.get("name"), "class",
-				s.get("class_name") == null ? "our school" : (String) s.get("class_name"), "date",
-				com.tirvextech.sms.shared.pdf.PdfKit.date(first)), MessageTemplates.language((String) s.get("message_language"))),
+		boolean queued = familyOutbox.queueTemplated(phone, (String) s.get("preferred_channel"),
+				(String) s.get("message_language"), Code.WELCOME,
+				Map.of("name", (String) s.get("name"), "class", s.get("class_name") == null ? "our school" : (String) s.get("class_name"),
+						"date", com.tirvextech.sms.shared.pdf.PdfKit.date(first)),
 				"WELCOME", "student", studentId, "welcome-" + studentId);
 		if (queued) {
 			audit.record("WELCOME_SENT", "student", studentId, null, Map.of("student", studentId));
