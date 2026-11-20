@@ -193,13 +193,11 @@ class TrialIT extends IntegrationTest {
 	}
 
 	@Test
-	void ownerCreatedSchoolsAreNotTrials() throws Exception {
-		var school = TestData.school("FULL");
-		TestData.admin(school, "admin", "password-full1");
-		ApiClient admin = new ApiClient(mvc);
-		admin.login(school.code(), "admin", "password-full1").andExpect(status().isOk());
-		admin.get("/api/v1/auth/me").andExpect(jsonPath("$.school.trialEndsAt").doesNotExist());
-		owner.post("/api/v1/platform/schools/" + school.id() + "/trial/extend", "{\"days\":5}")
-			.andExpect(jsonPath("$.code").value("NOT_ON_TRIAL"));
+	void ownerCreatedSchoolsStartATrialToo() throws Exception {
+		String code = code();
+		owner.post("/api/v1/platform/schools", """
+				{"code":"%s","name":"Owner Made","adminName":"A","adminUsername":"admin","adminEmail":"%s"}"""
+			.formatted(code, email())).andExpect(status().isCreated());
+		owner.get("/api/v1/platform/schools/" + schoolId(code)).andExpect(jsonPath("$.trialEndsAt").isNotEmpty());
 	}
 }

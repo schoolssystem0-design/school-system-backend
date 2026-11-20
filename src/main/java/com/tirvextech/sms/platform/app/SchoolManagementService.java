@@ -68,9 +68,12 @@ public class SchoolManagementService {
 
 	private final SchoolDeletion deletion;
 
+	private final int trialDays;
+
 	SchoolManagementService(org.springframework.context.ApplicationEventPublisher events, SchoolRepository schools,
 			SchoolDomainRepository domains, SchoolSetup schoolSetup, SchoolUserAdministration userAdmin, AuditService audit,
-			JdbcTemplate jdbc, PlatformTransactionManager transactionManager, Clock clock, SchoolDeletion deletion) {
+			JdbcTemplate jdbc, PlatformTransactionManager transactionManager, Clock clock, SchoolDeletion deletion,
+			@org.springframework.beans.factory.annotation.Value("${app.trial.days:14}") int trialDays) {
 		this.schools = schools;
 		this.domains = domains;
 		this.schoolSetup = schoolSetup;
@@ -81,6 +84,7 @@ public class SchoolManagementService {
 		this.clock = clock;
 		this.events = events;
 		this.deletion = deletion;
+		this.trialDays = trialDays;
 	}
 
 	public List<SchoolView> list() {
@@ -93,7 +97,8 @@ public class SchoolManagementService {
 
 	/**
 	 * Creates a school with its profile, built-in roles and main administrator in one transaction. Returns the
-	 * administrator's one-time setup link (shown once, also emailed when email is configured).
+	 * administrator's one-time setup link (shown once, also emailed when email is configured). Every new school starts
+	 * on a free trial of {@code app.trial.days}, whether the owner or the school itself signed up.
 	 */
 	public SchoolCreated create(NewSchool input) {
 		String code = input.code() == null ? "" : input.code().trim().toUpperCase(Locale.ROOT);
@@ -109,7 +114,8 @@ public class SchoolManagementService {
 				input.adminEmail());
 		Long id = jdbc.queryForObject("select nextval(pg_get_serial_sequence('school', 'id'))", Long.class);
 		SetupLink setup = TenantContext.callAsSchool(id, () -> transaction.execute(tx -> {
-			jdbc.update("insert into school (id, code, name) values (?, ?, ?)", id, code, name);
+			jdbc.update("insert into school (id, code, name, trial_ends_at) values (?, ?, ?, ?)", id, code, name,
+					java.sql.Timestamp.from(clock.instant().plus(java.time.Duration.ofDays(trialDays))));
 			schoolSetup.initialise(name);
 			SetupLink link = userAdmin.provisionSchool(name, admin);
 			events.publishEvent(new com.tirvextech.sms.shared.events.SchoolCreatedEvent(id, code, name));
